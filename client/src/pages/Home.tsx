@@ -1,5 +1,13 @@
 import { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Edit2, Download, Trash2, Plus, X, BarChart3, User } from "lucide-react";
+import {
+  AnimatedPage,
+  AnimatedProgressBar,
+  AnimatedNumber,
+  AnimatedTaskCard,
+  AnimatedButton,
+} from "@/components/animations";
 import {
   ChartContainer,
   ChartTooltip,
@@ -164,8 +172,8 @@ function StatsTab({ streak }: { streak: number }) {
               dataKey="xp"
               radius={[8, 8, 0, 0]}
               maxBarSize={48}
-              animationDuration={600}
-              animationEasing="ease-out"
+              animationDuration={400}
+              animationEasing="cubic-bezier(0.16, 1, 0.3, 1)"
             >
               {chartData.map((entry) => {
                 const xp = entry.xp || 0;
@@ -537,9 +545,10 @@ export default function Home() {
       `}</style>
 
       <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-8 pt-24">
+        <AnimatePresence mode="wait">
         {/* HOME TAB */}
         {currentTab === "home" && (
-          <div className="w-full max-w-md animate-fade-in">
+          <AnimatedPage key="home" className="w-full max-w-md">
             <div className="mb-8 text-center pt-4" style={{
               background: 'linear-gradient(135deg, rgba(147, 112, 219, 0.25) 0%, rgba(59, 130, 246, 0.25) 100%)',
               borderRadius: '30% 70% 70% 30% / 30% 30% 70% 70%',
@@ -579,10 +588,7 @@ export default function Home() {
                   <span className="text-accent font-bold">{Math.round(progress)}%</span>
                 </div>
                 <div className="w-full bg-muted/30 rounded-full h-3 overflow-hidden border border-border/30">
-                  <div 
-                    className="h-full bg-gradient-to-r from-purple-600 to-blue-600 transition-all duration-700 ease-out"
-                    style={{ width: `${progress}%` }}
-                  />
+                  <AnimatedProgressBar progress={progress} />
                 </div>
               </div>
 
@@ -592,22 +598,22 @@ export default function Home() {
               </div>
               <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
                 <span className="font-semibold text-foreground">XP:</span>
-                <span className="text-accent font-semibold">{xp}</span>
+                <AnimatedNumber value={xp} />
               </div>
             </div>
 
             <div className="glass-card p-6 mb-6 animate-slide-up bg-card/80 border-border/50" style={{ animationDelay: "0.2s" }}>
               <div className="space-y-3">
                 {tasks.map((task) => (
-                  <div
+                  <AnimatedTaskCard
                     key={task.id}
+                    completed={task.completed}
                     onClick={() => toggleTask(task.id)}
-					style={{ transition: "all 0.25s cubic-bezier(.4,2,.6,1)" }}
-                    className={`p-4 rounded-lg border cursor-pointer transform transition-all duration-300 ${
-                    task.completed
-                    ? "bg-green-500/10 border-green-500/30 scale-[1.02] shadow-md"
-                    : "bg-muted/20 border-border/30 hover:border-border/50 hover:scale-[1.01]"
-                  }`}
+                    className={`p-4 rounded-lg border ${
+                      task.completed
+                        ? "bg-green-500/10 border-green-500/30"
+                        : "bg-muted/20 border-border/30 hover:border-border/50"
+                    }`}
                   >
                     <div className="flex items-center gap-3 justify-between">
                       <div className="flex items-center gap-3 flex-1">
@@ -641,7 +647,7 @@ export default function Home() {
                         {DIFFICULTY_LABELS[getTaskDifficulty(task)]}
                       </span>
                     </div>
-                  </div>
+                  </AnimatedTaskCard>
                 ))}
               </div>
 
@@ -660,13 +666,13 @@ export default function Home() {
                 </select>
               </div>
 
-              <button
+              <AnimatedButton
                 onClick={addTask}
-                className="w-full mt-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2"
+                className="w-full mt-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg flex items-center justify-center gap-2"
               >
                 <Plus className="w-5 h-5" />
                 Add task
-              </button>
+              </AnimatedButton>
             </div>
 
             {progress === 100 && tasks.length > 0 && (
@@ -676,17 +682,19 @@ export default function Home() {
                 <p className="text-muted-foreground text-sm">Unlocked! You earned your time. 🎉</p>
               </div>
             )}
-          </div>
+          </AnimatedPage>
         )}
 
         {/* STATS TAB */}
         {currentTab === "stats" && (
-          <StatsTab streak={streak} />
+          <AnimatedPage key="stats" className="w-full max-w-md">
+            <StatsTab streak={streak} />
+          </AnimatedPage>
         )}
 
         {/* PROFILE TAB */}
         {currentTab === "profile" && (
-          <div className="w-full max-w-md animate-fade-in">
+          <AnimatedPage key="profile" className="w-full max-w-md">
             {!showSettings && !showWeeklyEditor ? (
               /* Main Profile View */
               <>
@@ -703,21 +711,21 @@ export default function Home() {
                   <p className="text-muted-foreground text-sm">Level 1 - Keep going! 🚀</p>
                 </div>
 
-                <button
+                <AnimatedButton
                   onClick={() => setShowWeeklyEditor(true)}
-                  className="w-full glass-card p-4 flex items-center justify-center gap-2 text-foreground font-semibold hover:bg-accent/20 transition-all duration-300 mb-4"
+                  className="w-full glass-card p-4 flex items-center justify-center gap-2 text-foreground font-semibold hover:bg-accent/20 mb-4"
                 >
                   <Edit2 className="w-5 h-5" />
                   Edit Tasks
-                </button>
+                </AnimatedButton>
 
-                <button
+                <AnimatedButton
                   onClick={() => setShowSettings(true)}
-                  className="w-full glass-card p-4 flex items-center justify-center gap-2 text-foreground font-semibold hover:bg-accent/20 transition-all duration-300"
+                  className="w-full glass-card p-4 flex items-center justify-center gap-2 text-foreground font-semibold hover:bg-accent/20"
                 >
                   <span className="text-lg">⚙️</span>
                   Settings
-                </button>
+                </AnimatedButton>
               </>
             ) : showWeeklyEditor ? (
               <>
@@ -778,13 +786,13 @@ export default function Home() {
                         ))}
                       </div>
 
-                      <button
+                      <AnimatedButton
                         onClick={() => addTaskToDay(editingDay)}
-                        className="w-full px-3 py-2 bg-accent/20 border border-accent/50 rounded-lg text-accent font-semibold flex items-center justify-center gap-2 hover:bg-accent/30 transition-all"
+                        className="w-full px-3 py-2 bg-accent/20 border border-accent/50 rounded-lg text-accent font-semibold flex items-center justify-center gap-2 hover:bg-accent/30"
                       >
                         <Plus className="w-4 h-4" />
                         Add task
-                      </button>
+                      </AnimatedButton>
                     </div>
                   )}
                 </div>
@@ -803,7 +811,7 @@ export default function Home() {
                 </div>
 
                 {/* Reset Today */}
-                <button
+                <AnimatedButton
                   onClick={() => {
                     if (confirm('Reset today\'s tasks only? Your streak and history will be preserved.')) {
                       setTasks([]);
@@ -814,14 +822,14 @@ export default function Home() {
                       alert('Today\'s tasks have been reset!');
                     }
                   }}
-                  className="w-full glass-card p-4 flex items-center justify-center gap-2 text-yellow-400 font-semibold hover:bg-yellow-500/10 transition-all duration-300 border border-yellow-500/30 mb-4"
+                  className="w-full glass-card p-4 flex items-center justify-center gap-2 text-yellow-400 font-semibold hover:bg-yellow-500/10 border border-yellow-500/30 mb-4"
                 >
                   <Trash2 className="w-5 h-5" />
                   Reset Today
-                </button>
+                </AnimatedButton>
 
                 {/* Reset Everything */}
-                <button
+                <AnimatedButton
                   onClick={() => {
                     if (confirm('Are you sure you want to reset everything? This will delete all your data, tasks, and streak.')) {
                       localStorage.clear();
@@ -832,32 +840,33 @@ export default function Home() {
                       alert('App has been reset! Refresh the page to start fresh.');
                     }
                   }}
-                  className="w-full glass-card p-4 flex items-center justify-center gap-2 text-red-400 font-semibold hover:bg-red-500/10 transition-all duration-300 border border-red-500/30 mb-4"
+                  className="w-full glass-card p-4 flex items-center justify-center gap-2 text-red-400 font-semibold hover:bg-red-500/10 border border-red-500/30 mb-4"
                 >
                   <Trash2 className="w-5 h-5" />
                   Reset Everything
-                </button>
+                </AnimatedButton>
 
                 {/* Export Data */}
-                <button
+                <AnimatedButton
                   onClick={exportData}
-                  className="w-full glass-card p-4 flex items-center justify-center gap-2 text-foreground font-semibold hover:bg-accent/20 transition-all duration-300"
+                  className="w-full glass-card p-4 flex items-center justify-center gap-2 text-foreground font-semibold hover:bg-accent/20"
                 >
                   <Download className="w-5 h-5" />
                   Export Data
-                </button>
+                </AnimatedButton>
               </>
             )}
-          </div>
+          </AnimatedPage>
         )}
+        </AnimatePresence>
       </div>
 
       {/* Top Navigation */}
       <div className="fixed top-0 left-0 right-0 bg-background/80 backdrop-blur-md border-b border-border/30 z-50">
         <div className="max-w-md mx-auto px-4 py-3 flex justify-around">
-          <button
+          <AnimatedButton
             onClick={() => setCurrentTab("home")}
-            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all duration-300 ${
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg ${
               currentTab === "home"
                 ? "text-accent bg-accent/20"
                 : "text-muted-foreground hover:text-foreground"
@@ -865,11 +874,11 @@ export default function Home() {
           >
             <span className="text-xl">🏠</span>
             <span className="text-xs font-medium">Home</span>
-          </button>
+          </AnimatedButton>
 
-          <button
+          <AnimatedButton
             onClick={() => setCurrentTab("stats")}
-            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all duration-300 ${
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg ${
               currentTab === "stats"
                 ? "text-accent bg-accent/20"
                 : "text-muted-foreground hover:text-foreground"
@@ -877,14 +886,14 @@ export default function Home() {
           >
             <BarChart3 className="w-5 h-5" />
             <span className="text-xs font-medium">Stats</span>
-          </button>
+          </AnimatedButton>
 
-          <button
+          <AnimatedButton
             onClick={() => {
               setCurrentTab("profile");
               setShowSettings(false);
             }}
-            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all duration-300 ${
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg ${
               currentTab === "profile"
                 ? "text-accent bg-accent/20"
                 : "text-muted-foreground hover:text-foreground"
@@ -892,7 +901,7 @@ export default function Home() {
           >
             <span className="text-xl">👤</span>
             <span className="text-xs font-medium">Profile</span>
-          </button>
+          </AnimatedButton>
         </div>
       </div>
     </div>
