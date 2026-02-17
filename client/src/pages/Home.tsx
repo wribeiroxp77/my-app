@@ -173,7 +173,7 @@ function StatsTab({ streak }: { streak: number }) {
               radius={[8, 8, 0, 0]}
               maxBarSize={48}
               animationDuration={400}
-              animationEasing="cubic-bezier(0.16, 1, 0.3, 1)"
+              animationEasing="ease-in-out"
             >
               {chartData.map((entry) => {
                 const xp = entry.xp || 0;
@@ -205,9 +205,10 @@ export default function Home() {
   const [weeklyTasks, setWeeklyTasks] = useState<WeeklyTasks>({});
   const [newTaskDifficulty, setNewTaskDifficulty] = useState<Difficulty>("easy");
   const [editingDay, setEditingDay] = useState<string | null>(null);
-  const [editingTaskText, setEditingTaskText] = useState("");
   const [streakClaimedToday, setStreakClaimedToday] = useState(false);
   const confettiRef = useRef<HTMLDivElement>(null);
+ const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+const [editingText, setEditingText] = useState("");
 
   // Initialize
   useEffect(() => {
@@ -335,6 +336,7 @@ export default function Home() {
   };
 
   const toggleTask = (id: string) => {
+    
     const todayISO = new Date().toISOString().split("T")[0];
     let xpDelta = 0;
 
@@ -375,8 +377,35 @@ export default function Home() {
     // salvar XP diário em historico_tarefas
     updateTaskHistory(todayISO, xpDelta);
   };
+ const startEditing = (taskId: string, currentText: string) => {
+  setEditingTaskId(taskId);
+  setEditingText(currentText);
+};
 
-  const updateProgress = (currentTasks: Task[]) => {
+const saveEdit = (taskId: string) => {
+  setTasks(tasks.map(task => 
+    task.id === taskId ? { ...task, text: editingText } : task
+  ));
+  setEditingTaskId(null);
+  setEditingText("");
+};
+
+const cancelEdit = () => {
+  setEditingTaskId(null);
+  setEditingText("");
+};
+const deleteTask = (id: string) => {
+  const updatedTasks = tasks.filter(task => task.id !== id);
+  setTasks(updatedTasks);
+  
+  const dayName = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+  const weeklyUpdated = { ...weeklyTasks, [dayName]: updatedTasks };
+  setWeeklyTasks(weeklyUpdated);
+  
+  localStorage.setItem("tasks", JSON.stringify(updatedTasks));
+  localStorage.setItem("weeklyTasks", JSON.stringify(weeklyUpdated));
+};
+    const updateProgress = (currentTasks: Task[]) => {
     const completed = currentTasks.filter(t => t.completed).length;
     const total = currentTasks.length;
     const progress = total > 0 ? (completed / total) * 100 : 0;
@@ -412,19 +441,6 @@ export default function Home() {
       difficulty: newTaskDifficulty
     };
     const updated = [...tasks, newTask];
-    setTasks(updated);
-    
-    const today = new Date();
-    const dayName = DAYS[today.getDay() === 0 ? 6 : today.getDay() - 1];
-    const weeklyUpdated = { ...weeklyTasks, [dayName]: updated };
-    setWeeklyTasks(weeklyUpdated);
-    
-    localStorage.setItem("tasks", JSON.stringify(updated));
-    localStorage.setItem("weeklyTasks", JSON.stringify(weeklyUpdated));
-  };
-
-  const deleteTask = (id: string) => {
-    const updated = tasks.filter(t => t.id !== id);
     setTasks(updated);
     
     const today = new Date();
@@ -606,48 +622,94 @@ export default function Home() {
               <div className="space-y-3">
                 {tasks.map((task) => (
                   <AnimatedTaskCard
-                    key={task.id}
-                    completed={task.completed}
-                    onClick={() => toggleTask(task.id)}
-                    className={`p-4 rounded-lg border ${
-                      task.completed
-                        ? "bg-green-500/10 border-green-500/30"
-                        : "bg-muted/20 border-border/30 hover:border-border/50"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 justify-between">
-                      <div className="flex items-center gap-3 flex-1">
-                        <div
-					  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-  task.completed
-    ? "bg-green-500 border-green-500 scale-95 opacity-80"
-    : "border-muted-foreground"
-}`}
-					  >
-                       {task.completed && (
-                     <span className="text-white text-sm animate-bounce">✓</span>
-                     )}
-                      </div>
-                      <input
-                        type="text"
-                        value={task.text}
-                        onChange={(e) => updateTaskText(task.id, e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                        className={`flex-1 bg-transparent outline-none ${
-                          task.completed
-                            ? "text-muted-foreground line-through"
-                            : "text-foreground"
-                        }`}
-                      />
-                      </div>
-                      <span
-                        onClick={(e) => e.stopPropagation()}
-                        className={getDifficultyBadgeClasses(task)}
-                      >
-                        {DIFFICULTY_LABELS[getTaskDifficulty(task)]}
-                      </span>
-                    </div>
-                  </AnimatedTaskCard>
+  key={task.id}
+  completed={task.completed}
+  onClick={() => {
+    if (editingTaskId === task.id) {
+      saveEdit(task.id);
+    } else {
+      toggleTask(task.id);
+    }
+  }}
+  className={`p-4 rounded-lg border ${
+    task.completed
+      ? "bg-green-500/10 border-green-500/30"
+      : "bg-muted/20 border-border/30 hover:border-border/50"
+  }`}
+>
+  <div className="flex items-center gap-3 justify-between">
+    <div className="flex items-center gap-3 flex-1">
+      <div
+        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+          task.completed
+            ? "bg-green-500 border-green-500 scale-95 opacity-80"
+            : "border-muted-foreground"
+        }`}
+      >
+        {task.completed && (
+          <span className="text-white text-sm animate-bounce">✓</span>
+        )}
+      </div>
+
+      {editingTaskId === task.id ? (
+        <input
+          type="text"
+          value={editingText}
+          onChange={(e) => setEditingText(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          onBlur={() => saveEdit(task.id)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') saveEdit(task.id);
+            if (e.key === 'Escape') cancelEdit();
+          }}
+          className="flex-1 bg-background border border-border rounded px-2 py-1 text-foreground"
+          autoFocus
+        />
+      ) : (
+        <span
+          className={`flex-1 ${
+            task.completed
+              ? "text-muted-foreground line-through"
+              : "text-foreground"
+          }`}
+        >
+          {task.text}
+        </span>
+      )}
+
+      {editingTaskId !== task.id && (
+  <div className="flex items-center gap-2">
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        startEditing(task.id, task.text);
+      }}
+      className="text-muted-foreground hover:text-foreground"
+    >
+      ✏️
+    </button>
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        deleteTask(task.id);
+      }}
+      className="text-red-500/70 hover:text-red-500"
+    >
+      🗑️
+    </button>
+  </div>
+)}
+    </div>
+
+
+    <span
+      onClick={(e) => e.stopPropagation()}
+      className={getDifficultyBadgeClasses(task)}
+    >
+      {DIFFICULTY_LABELS[getTaskDifficulty(task)]}
+    </span>
+  </div>
+</AnimatedTaskCard>
                 ))}
               </div>
 
@@ -744,8 +806,8 @@ export default function Home() {
                   <div className="space-y-3">
                     {DAYS.map((day) => (
                       <button
-                        key={day}
-                        onClick={() => setEditingDay(editingDay === day ? null : day)}
+                        key={day} 
+                        onClick={() => setEditingDay(day)}                     
                         className={`w-full p-3 rounded-lg transition-all duration-300 text-left ${
                           editingDay === day
                             ? "bg-accent/30 border border-accent/50"
