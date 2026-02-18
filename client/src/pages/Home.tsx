@@ -209,6 +209,8 @@ export default function Home() {
   const confettiRef = useRef<HTMLDivElement>(null);
  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
 const [editingText, setEditingText] = useState("");
+const [editingWeeklyTaskId, setEditingWeeklyTaskId] = useState<string | null>(null);
+const [editingWeeklyText, setEditingWeeklyText] = useState("");
 
   // Initialize
   useEffect(() => {
@@ -404,6 +406,36 @@ const deleteTask = (id: string) => {
   
   localStorage.setItem("tasks", JSON.stringify(updatedTasks));
   localStorage.setItem("weeklyTasks", JSON.stringify(weeklyUpdated));
+};
+const startEditingWeeklyTask = (day: string, taskId: string, currentText: string) => {
+  setEditingWeeklyTaskId(taskId);
+  setEditingWeeklyText(currentText);
+};
+
+const saveEditWeeklyTask = (day: string, taskId: string) => {
+  const updatedTasks = (weeklyTasks[day] || []).map(task =>
+    task.id === taskId ? { ...task, text: editingWeeklyText } : task
+  );
+  
+  const updated = { ...weeklyTasks, [day]: updatedTasks };
+  setWeeklyTasks(updated);
+  localStorage.setItem("weeklyTasks", JSON.stringify(updated));
+  
+  setEditingWeeklyTaskId(null);
+  setEditingWeeklyText("");
+};
+
+const cancelEditWeeklyTask = () => {
+  setEditingWeeklyTaskId(null);
+  setEditingWeeklyText("");
+};
+
+const deleteWeeklyTask = (day: string, taskId: string) => {
+  const updatedTasks = (weeklyTasks[day] || []).filter(task => task.id !== taskId);
+  
+  const updated = { ...weeklyTasks, [day]: updatedTasks };
+  setWeeklyTasks(updated);
+  localStorage.setItem("weeklyTasks", JSON.stringify(updated));
 };
     const updateProgress = (currentTasks: Task[]) => {
     const completed = currentTasks.filter(t => t.completed).length;
@@ -836,18 +868,49 @@ const deleteTask = (id: string) => {
                         </button>
                       </div>
 
-                      <div className="space-y-2 mb-4">
-                        {(weeklyTasks[editingDay] || []).map((task) => (
-                          <input
-                            key={task.id}
-                            type="text"
-                            value={task.text}
-                            onChange={(e) => updateTaskInDay(editingDay, task.id, e.target.value)}
-                            className="w-full px-3 py-2 bg-background border border-border/30 rounded-lg text-foreground outline-none focus:border-accent/50"
-                          />
-                        ))}
-                      </div>
-
+                     <div className="space-y-2 mb-4">
+  {(weeklyTasks[editingDay] || []).map((task) => (
+    <div
+      key={task.id}
+      className="flex items-center gap-2 p-3 bg-background border border-border/30 rounded-lg hover:border-accent/50 transition-all"
+    >
+      {editingWeeklyTaskId === task.id ? (
+        <>
+          <input
+            type="text"
+            value={editingWeeklyText}
+            onChange={(e) => setEditingWeeklyText(e.target.value)}
+            onBlur={() => saveEditWeeklyTask(editingDay, task.id)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') saveEditWeeklyTask(editingDay, task.id);
+              if (e.key === 'Escape') cancelEditWeeklyTask();
+            }}
+            className="flex-1 px-3 py-2 bg-background border border-accent/50 rounded-lg text-foreground outline-none"
+            autoFocus
+          />
+        </>
+      ) : (
+        <>
+          <span className="flex-1 text-foreground">{task.text}</span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => startEditingWeeklyTask(editingDay, task.id, task.text)}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              ✏️
+            </button>
+            <button
+              onClick={() => deleteWeeklyTask(editingDay, task.id)}
+              className="text-red-500/70 hover:text-red-500"
+            >
+              🗑️
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  ))}
+</div>
                       <AnimatedButton
                         onClick={() => addTaskToDay(editingDay)}
                         className="w-full px-3 py-2 bg-accent/20 border border-accent/50 rounded-lg text-accent font-semibold flex items-center justify-center gap-2 hover:bg-accent/30"
