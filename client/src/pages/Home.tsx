@@ -212,6 +212,8 @@ const [editingText, setEditingText] = useState("");
 const [editingWeeklyTaskId, setEditingWeeklyTaskId] = useState<string | null>(null);
 const [editingWeeklyText, setEditingWeeklyText] = useState("");
 const [showDifficultyMenu, setShowDifficultyMenu] = useState(false);
+const [newTaskText, setNewTaskText] = useState("");
+const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null);
 
   // Initialize
   useEffect(() => {
@@ -467,21 +469,22 @@ const deleteWeeklyTask = (day: string, taskId: string) => {
   };
 
  const addTask = (difficulty: Difficulty) => {
+  if (!newTaskText.trim()) return;
+  
   const newTask: Task = {
     id: Date.now().toString(),
-    text: "New task",
+    text: newTaskText.trim(),
     completed: false,
-    difficulty: difficulty
+    difficulty: difficulty,
   };
-
+  
   const updated = [...tasks, newTask];
   setTasks(updated);
-
-  const today = new Date();
-  const dayName = DAYS[today.getDay() === 0 ? 6 : today.getDay() - 1];
+  
+  const dayName = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
   const weeklyUpdated = { ...weeklyTasks, [dayName]: updated };
   setWeeklyTasks(weeklyUpdated);
-
+  
   localStorage.setItem("tasks", JSON.stringify(updated));
   localStorage.setItem("weeklyTasks", JSON.stringify(weeklyUpdated));
 };
@@ -558,6 +561,74 @@ const deleteWeeklyTask = (day: string, taskId: string) => {
     const difficulty = getTaskDifficulty(task);
     return total + DIFFICULTY_XP[difficulty];
   }, 0);
+  // Sistema de Níveis
+const calculateLevel = (totalXP: number) => {
+  let level = 1;
+  let xpNeeded = 50;
+  let xpCounted = 0;
+  
+  while (xpCounted + xpNeeded <= totalXP) {
+    xpCounted += xpNeeded;
+    level++;
+    xpNeeded = 50 * level;
+  }
+  
+  return {
+    level,
+    currentLevelXP: totalXP - xpCounted,
+    xpForNextLevel: xpNeeded,
+    progressPercent: ((totalXP - xpCounted) / xpNeeded) * 100
+  };
+};
+
+const levelInfo = calculateLevel(xp);
+
+// Frases motivacionais aleatórias
+const motivationalQuotes = [
+  "Discipline beats motivation.",
+  "Earn your time.",
+  "One day or day one.",
+  "Small steps, big results.",
+  "Progress over perfection.",
+  "Your future self will thank you.",
+  "Consistency is key.",
+  "Make it happen.",
+];
+
+const [currentQuote] = useState(() => 
+  motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]
+);
+
+// Badges desbloqueadas
+const totalTasksCompleted = tasks.filter(t => t.completed).length;
+const hardTasksCompleted = tasks.filter(t => t.completed && getTaskDifficulty(t) === "hard").length;
+
+const badges = [
+  { 
+    icon: "⭐", 
+    unlocked: totalTasksCompleted >= 100, 
+    title: "Centurion",
+    description: "100 tasks completed"
+  },
+  { 
+    icon: "💎", 
+    unlocked: xp >= 500, 
+    title: "XP Master",
+    description: "500 XP earned"
+  },
+  { 
+    icon: "💪", 
+    unlocked: hardTasksCompleted >= 50, 
+    title: "Hardcore",
+    description: "50 hard tasks"
+  },
+  { 
+    icon: "🏆", 
+    unlocked: levelInfo.level >= 5, 
+    title: "Level 5",
+    description: "Reached level 5"
+  },
+];
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -619,23 +690,84 @@ const deleteWeeklyTask = (day: string, taskId: string) => {
         {/* HOME TAB */}
         {currentTab === "home" && (
           <AnimatedPage key="home" className="w-full max-w-md">
-            <div className="mb-8 text-center" style={{
-  background: 'linear-gradient(135deg, rgba(147, 112, 219, 0.25) 0%, rgba(59, 130, 246, 0.25) 100%)',
-  borderRadius: '30% 70% 70% 30% / 30% 30% 70% 70%',
-  border: '2px solid rgba(147, 112, 219, 0.4)',
-  boxShadow: '0 12px 40px rgba(147, 112, 219, 0.15)',
-  padding: '2rem 1.5rem'
-}}>
-  <div className="flex flex-col items-center justify-center">
+            
+ <div className="w-full max-w-md mx-auto mb-8 text-center relative rounded-2xl p-3
+  bg-gradient-to-br from-black/40 via-purple-900/20 to-black/40
+  backdrop-blur-xl
+  border-2 border-purple-500/40
+  shadow-[0_0_40px_rgba(168,85,247,0.15)]">
+  
+  {/* Badges espalhados tipo estrelas */}
+  <div className="absolute top-2 right-2 w-10 h-10 rounded-full flex items-center justify-center text-xl
+    ${badges[0].unlocked 
+      ? 'bg-gradient-to-br from-yellow-400 to-orange-500 shadow-[0_0_20px_rgba(251,191,36,0.4)]' 
+      : 'bg-black/60 grayscale opacity-30'
+    } transition-all"
+    title={badges[0].unlocked ? badges[0].title : `🔒 ${badges[0].description}`}>
+    {badges[0].icon}
+  </div>
+  
+  <div className="absolute top-12 right-4 w-10 h-10 rounded-full flex items-center justify-center text-xl
+    ${badges[1].unlocked 
+      ? 'bg-gradient-to-br from-yellow-400 to-orange-500 shadow-[0_0_20px_rgba(251,191,36,0.4)]' 
+      : 'bg-black/60 grayscale opacity-30'
+    } transition-all"
+    title={badges[1].unlocked ? badges[1].title : `🔒 ${badges[1].description}`}>
+    {badges[1].icon}
+  </div>
+  
+  <div className="absolute top-2 left-2 w-10 h-10 rounded-full flex items-center justify-center text-xl
+    ${badges[2].unlocked 
+      ? 'bg-gradient-to-br from-yellow-400 to-orange-500 shadow-[0_0_20px_rgba(251,191,36,0.4)]' 
+      : 'bg-black/60 grayscale opacity-30'
+    } transition-all"
+    title={badges[2].unlocked ? badges[2].title : `🔒 ${badges[2].description}`}>
+    {badges[2].icon}
+  </div>
+  
+  <div className="absolute top-12 left-4 w-10 h-10 rounded-full flex items-center justify-center text-xl
+    ${badges[3].unlocked 
+      ? 'bg-gradient-to-br from-yellow-400 to-orange-500 shadow-[0_0_20px_rgba(251,191,36,0.4)]' 
+      : 'bg-black/60 grayscale opacity-30'
+    } transition-all"
+    title={badges[3].unlocked ? badges[3].title : `🔒 ${badges[3].description}`}>
+    {badges[3].icon}
+  </div>
+  
+  {/* Logo */}
   <img 
-  src="/logo.png" 
-  alt="Single Player Logo" 
-  className="w-[clamp(150px,28vw,230px)] h-auto mb-2 animate-pulse-slow drop-shadow-[0_0_20px_rgba(147,112,219,0.5)]"
-/>
-  <h1 className="text-4xl font-bold text-foreground">Single Player</h1>
-  <p className="text-muted-foreground text-lg mt-1">Earn your time.</p>
+    src="/logo.png" 
+    alt="Single Player Logo" 
+    className="w-52 h-52 mx-auto -mb-8 drop-shadow-[0_0_25px_rgba(168,85,247,0.6)]"
+  />
+  
+  {/* Level e barra horizontal */}
+  <div className="flex items-center justify-center gap-2 mb-2">
+    <div className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-full border border-purple-500/40">
+      <span className="text-purple-400 font-bold text-base">Lvl {levelInfo.level}</span>
+    </div>
+    
+    <div className="w-32 bg-black/30 rounded-full h-2 overflow-hidden border border-purple-500/30">
+      <div 
+        style={{ width: `${levelInfo.progressPercent}%` }}
+        className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-purple-500 to-blue-600 transition-all duration-700"
+      />
+    </div>
+    
+    <span className="text-xs text-purple-300/60 whitespace-nowrap">
+      {Math.round(levelInfo.currentLevelXP)}/{levelInfo.xpForNextLevel}
+    </span>
+  </div>
+  
+  {/* Título */}
+  <h1 className="text-4xl font-bold text-white mb-2">Single Player</h1>
+  
+  {/* Frase motivacional */}
+  <p className="text-purple-300/80 text-base mb-2 flex items-center justify-center gap-2">
+    <span className="text-yellow-400">🏆</span>
+    {currentQuote}
+  </p>
 </div>
-            </div>
 
             <div className="relative p-6 mb-6 animate-slide-up rounded-2xl
   bg-gradient-to-br from-black/40 via-purple-900/20 to-black/40
@@ -663,20 +795,23 @@ const deleteWeeklyTask = (day: string, taskId: string) => {
     </div>
   </div>
 
+  <div className="flex items-center justify-between">
   <div className="flex items-center gap-2 text-purple-400">
     <span className="text-lg">🔥</span>
     <span className="font-semibold">Streak: {streak} day{streak !== 1 ? 's' : ''}</span>
   </div>
-  <div className="mt-1 flex items-center gap-2 text-sm text-purple-300/70">
-    <span className="font-semibold text-purple-300">XP:</span>
+  
+  <div className="flex items-center gap-2 text-purple-400">
+    <span className="font-semibold">XP:</span>
     <AnimatedNumber value={xp} />
   </div>
 </div>
+</div>
 
             <div className="relative p-6 mb-6 animate-slide-up rounded-2xl
-  bg-gradient-to-br from-black/40 via-blue-900/20 to-black/40
+  bg-gradient-to-br from-black/40 via-purple-900/20 to-black/40
   backdrop-blur-xl
-  border-2 border-blue-500/40
+  border-2 border-purple-500/40
   shadow-[0_0_40px_rgba(59,130,246,0.15)]"
   style={{ animationDelay: "0.2s" }}
 >
@@ -804,33 +939,91 @@ const deleteWeeklyTask = (day: string, taskId: string) => {
   <span className="absolute inset-0 rounded-full border-2 border-white/40 animate-ping-slow"></span>
 </button>
  {showDifficultyMenu && (
-  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-    <div className="bg-card border border-border/40 rounded-2xl p-6 w-72 animate-scale-in">
-
-      <h2 className="text-lg font-bold text-center mb-4">
-        Choose difficulty
+  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="bg-gradient-to-br from-black/90 via-purple-900/30 to-black/90 
+      backdrop-blur-xl border-2 border-purple-500/40 rounded-2xl p-6 w-full max-w-sm 
+      shadow-[0_0_60px_rgba(168,85,247,0.3)]">
+      
+      <h2 className="text-xl font-bold text-white text-center mb-4">
+        Add New Task
       </h2>
-
-      {(["easy","medium","hard"] as Difficulty[]).map((level)=>(
+      
+      {/* Input do nome da task */}
+      <input
+        type="text"
+        placeholder="What do you need to do?"
+        value={newTaskText}
+        onChange={(e) => setNewTaskText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && newTaskText.trim() && selectedDifficulty) {
+            addTask(selectedDifficulty);
+            setShowDifficultyMenu(false);
+            setNewTaskText("");
+            setSelectedDifficulty(null);
+          }
+        }}
+        className="w-full mb-4 px-4 py-3 bg-black/40 border-2 border-purple-500/30 
+          rounded-xl text-white placeholder:text-purple-300/40 
+          focus:border-purple-400 focus:outline-none transition-colors"
+        autoFocus
+      />
+      
+      {/* Botões de dificuldade */}
+      <div className="mb-4">
+        <p className="text-sm text-purple-300/70 mb-2">Difficulty:</p>
+        <div className="grid grid-cols-3 gap-2">
+          {(["easy", "medium", "hard"] as Difficulty[]).map((level) => (
+            <button
+              key={level}
+              onClick={() => setSelectedDifficulty(level)}
+              className={`py-2.5 rounded-lg font-semibold transition-all ${
+                selectedDifficulty === level
+                  ? level === "easy"
+                    ? "bg-emerald-500/30 border-2 border-emerald-400 text-emerald-300 shadow-[0_0_15px_rgba(52,211,153,0.3)]"
+                    : level === "medium"
+                    ? "bg-yellow-500/30 border-2 border-yellow-400 text-yellow-300 shadow-[0_0_15px_rgba(250,204,21,0.3)]"
+                    : "bg-rose-500/30 border-2 border-rose-400 text-rose-300 shadow-[0_0_15px_rgba(251,113,133,0.3)]"
+                  : "bg-black/40 border-2 border-purple-500/20 text-purple-300/60 hover:border-purple-500/40"
+              }`}
+            >
+              {DIFFICULTY_LABELS[level]}
+            </button>
+          ))}
+        </div>
+      </div>
+      
+      {/* Botões de ação */}
+      <div className="flex gap-3">
         <button
-          key={level}
-          onClick={()=>{
-            addTask(level)
-            setShowDifficultyMenu(false)
+          onClick={() => {
+            setShowDifficultyMenu(false);
+            setNewTaskText("");
+            setSelectedDifficulty(null);
           }}
-          className="w-full mb-3 py-2 rounded-lg bg-accent/20 hover:bg-accent/40 border border-accent/40 transition"
+          className="flex-1 py-2.5 rounded-lg border-2 border-purple-500/30 
+            text-purple-300 hover:bg-purple-500/10 transition-all"
         >
-          {DIFFICULTY_LABELS[level]}
+          Cancel
         </button>
-      ))}
-
-      <button
-        onClick={()=>setShowDifficultyMenu(false)}
-        className="w-full mt-2 text-sm text-muted-foreground"
-      >
-        Cancel
-      </button>
-
+        <button
+          onClick={() => {
+            if (newTaskText.trim() && selectedDifficulty) {
+              addTask(selectedDifficulty);
+              setShowDifficultyMenu(false);
+              setNewTaskText("");
+              setSelectedDifficulty(null);
+            }
+          }}
+          disabled={!newTaskText.trim() || !selectedDifficulty}
+          className={`flex-1 py-2.5 rounded-lg font-semibold transition-all ${
+            newTaskText.trim() && selectedDifficulty
+              ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:shadow-[0_0_30px_rgba(168,85,247,0.6)]"
+              : "bg-black/40 text-purple-300/30 cursor-not-allowed"
+          }`}
+        >
+          Add Task
+        </button>
+      </div>
     </div>
   </div>
 )}
