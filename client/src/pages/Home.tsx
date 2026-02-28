@@ -313,7 +313,7 @@ function StatsTab({
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.3 }}
-        className="rounded-2xl border border-purple-500/40 bg-gradient-to-br from-black/40 via-purple-900/10 to-black/40 backdrop-blur-xl p-5 mb-4 shadow-[0_0_40px_rgba(168,85,247,0.08)]"
+        className="rounded-2xl border border-purple-500/40 bg-linear-to-br from-black/40 via-purple-900/10 to-black/40 backdrop-blur-xl p-5 mb-4 shadow-[0_0_40px_rgba(168,85,247,0.08)]"
       >
         <h3 className="text-white font-semibold mb-4 text-sm tracking-wide uppercase opacity-80">
           📈 XP — Last 7 Days
@@ -727,7 +727,7 @@ function ProfileTab({
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="w-full max-w-sm rounded-2xl border border-purple-500/40 bg-gradient-to-br from-black/80 via-purple-900/30 to-black/80 backdrop-blur-xl p-6 shadow-[0_0_60px_rgba(168,85,247,0.2)]"
+            className="w-full max-w-sm rounded-2xl border border-purple-500/40 bg-linear-to-br from-black/80 via-purple-900/30 to-black/80 backdrop-blur-xl p-6 shadow-[0_0_60px_rgba(168,85,247,0.2)]"
           >
             <div className="text-4xl text-center mb-3">
               {resetModal === "today" ? "⚠️" : "💀"}
@@ -877,7 +877,7 @@ function ProfileTab({
                   initial={{ width: 0 }}
                   animate={{ width: `${xpPct}%` }}
                   transition={{ duration: 0.8, ease: "easeOut" }}
-                  className="h-full rounded-full bg-gradient-to-r from-purple-500 to-cyan-500"
+                  className="h-full rounded-full bg-linear-to-r from-purple-500 to-cyan-500"
                   style={{ boxShadow: "0 0 8px rgba(139,92,246,0.5)" }}
                 />
               </div>
@@ -911,7 +911,7 @@ function ProfileTab({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35, delay: btn.delay }}
               onClick={btn.onClick}
-              className={`w-full rounded-2xl border ${btn.border} bg-gradient-to-br from-black/40 via-purple-900/10 to-black/40 backdrop-blur-xl p-4 flex items-center justify-between mb-3 ${btn.glow} transition-all duration-300`}
+              className={`w-full rounded-2xl border ${btn.border} bg-linear-to-br from-black/40 via-purple-900/10 to-black/40 backdrop-blur-xl p-4 flex items-center justify-between mb-3 ${btn.glow} transition-all duration-300`}
             >
               <div className="flex items-center gap-3">
                 <span className="text-xl">{btn.icon}</span>
@@ -926,7 +926,7 @@ function ProfileTab({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: 0.2 }}
             onClick={handleNotification}
-            className="w-full rounded-2xl border border-blue-500/40 bg-gradient-to-br from-black/40 via-blue-900/10 to-black/40 backdrop-blur-xl p-4 flex items-center justify-between mb-3 hover:shadow-[0_0_20px_rgba(59,130,246,0.15)] transition-all duration-300"
+            className="w-full rounded-2xl border border-blue-500/40 bg-linear-to-br from-black/40 via-blue-900/10 to-black/40 backdrop-blur-xl p-4 flex items-center justify-between mb-3 hover:shadow-[0_0_20px_rgba(59,130,246,0.15)] transition-all duration-300"
           >
             <div className="flex items-center gap-3">
               <span className="text-xl">🔔</span>
@@ -942,7 +942,7 @@ function ProfileTab({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: 0.25 }}
             onClick={handleInstallApp}
-            className="w-full rounded-2xl border border-cyan-500/40 bg-gradient-to-br from-black/40 via-cyan-900/10 to-black/40 backdrop-blur-xl p-4 flex items-center justify-between mb-3 hover:shadow-[0_0_20px_rgba(6,182,212,0.15)] transition-all duration-300"
+            className="w-full rounded-2xl border border-cyan-500/40 bg-linear-to-br from-black/40 via-cyan-900/10 to-black/40 backdrop-blur-xl p-4 flex items-center justify-between mb-3 hover:shadow-[0_0_20px_rgba(6,182,212,0.15)] transition-all duration-300"
           >
             <div className="flex items-center gap-3">
               <span className="text-xl">📱</span>
@@ -956,7 +956,7 @@ function ProfileTab({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: 0.3 }}
             onClick={handleShareApp}
-            className="w-full rounded-2xl border border-purple-500/40 bg-gradient-to-br from-black/40 via-purple-900/10 to-black/40 backdrop-blur-xl p-4 flex items-center justify-between mb-3 hover:shadow-[0_0_20px_rgba(139,92,246,0.15)] transition-all duration-300"
+            className="w-full rounded-2xl border border-purple-500/40 bg-linear-to-br from-black/40 via-purple-900/10 to-black/40 backdrop-blur-xl p-4 flex items-center justify-between mb-3 hover:shadow-[0_0_20px_rgba(139,92,246,0.15)] transition-all duration-300"
           >
             <div className="flex items-center gap-3">
               <span className="text-xl">🔗</span>
@@ -969,7 +969,7 @@ function ProfileTab({
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: 0.35 }}
-            className="w-full rounded-2xl border border-purple-500/20 bg-gradient-to-br from-black/40 via-purple-900/10 to-black/40 backdrop-blur-xl p-5 text-center"
+            className="w-full rounded-2xl border border-purple-500/20 bg-linear-to-br from-black/40 via-purple-900/10 to-black/40 backdrop-blur-xl p-5 text-center"
           >
             <p className="text-white/60 text-sm leading-relaxed">
               "You are the protagonist of this game.
@@ -1153,7 +1153,7 @@ function ProfileTab({
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35, delay: 0.05 }}
-              className="rounded-2xl border border-cyan-500/40 bg-gradient-to-br from-black/40 via-cyan-900/10 to-black/40 backdrop-blur-xl p-4 flex items-center justify-between shadow-[0_0_20px_rgba(6,182,212,0.06)]"
+              className="rounded-2xl border border-cyan-500/40 bg-linear-to-br from-black/40 via-cyan-900/10 to-black/40 backdrop-blur-xl p-4 flex items-center justify-between shadow-[0_0_20px_rgba(6,182,212,0.06)]"
             >
               <div className="flex items-center gap-3">
                 <span className="text-xl">🌐</span>
@@ -1721,9 +1721,9 @@ export default function Home() {
   return (
     <div className="relative min-h-screen overflow-hidden">
       {/* Animated Galaxy Background */}
-      <div className="fixed inset-0 bg-gradient-to-br from-[#0a0a0a] via-[#1a0b2e] to-[#16213e] animate-gradient" />
-      <div className="fixed inset-0 bg-gradient-to-tl from-[#6b21a8]/30 via-transparent to-[#0f2557]/30" />
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-900/20 via-transparent to-transparent" />
+      <div className="fixed inset-0 bg-linear-to-br from-[#0a0a0a] via-[#1a0b2e] to-[#16213e] animate-gradient" />
+      <div className="fixed inset-0 bg-linear-to-tl from-[#6b21a8]/30 via-transparent to-[#0f2557]/30" />
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,var(--tw-gradient-stops))] from-purple-900/20 via-transparent to-transparent" />
 
       {/* Animated stars */}
       <div className="fixed inset-0 overflow-hidden">
@@ -1808,7 +1808,7 @@ export default function Home() {
             <AnimatedPage key="home" className="w-full max-w-md">
               <div
                 className="w-full max-w-md mx-auto mb-8 text-center relative rounded-2xl p-3
-  bg-gradient-to-br from-black/40 via-purple-900/20 to-black/40
+  bg-linear-to-br from-black/40 via-purple-900/20 to-black/40
   backdrop-blur-xl
   border-2 border-purple-500/40
   shadow-[0_0_40px_rgba(168,85,247,0.15)]"
@@ -1817,7 +1817,7 @@ export default function Home() {
                 <div
                   className="absolute top-2 right-2 w-10 h-10 rounded-full flex items-center justify-center text-xl
     ${badges[0].unlocked 
-      ? 'bg-gradient-to-br from-yellow-400 to-orange-500 shadow-[0_0_20px_rgba(251,191,36,0.4)]' 
+      ? 'bg-linear-to-br from-yellow-400 to-orange-500 shadow-[0_0_20px_rgba(251,191,36,0.4)]' 
       : 'bg-black/60 grayscale opacity-30'
     } transition-all"
                   title={
@@ -1832,7 +1832,7 @@ export default function Home() {
                 <div
                   className="absolute top-12 right-4 w-10 h-10 rounded-full flex items-center justify-center text-xl
     ${badges[1].unlocked 
-      ? 'bg-gradient-to-br from-yellow-400 to-orange-500 shadow-[0_0_20px_rgba(251,191,36,0.4)]' 
+      ? 'bg-linear-to-br from-yellow-400 to-orange-500 shadow-[0_0_20px_rgba(251,191,36,0.4)]' 
       : 'bg-black/60 grayscale opacity-30'
     } transition-all"
                   title={
@@ -1847,7 +1847,7 @@ export default function Home() {
                 <div
                   className="absolute top-2 left-2 w-10 h-10 rounded-full flex items-center justify-center text-xl
     ${badges[2].unlocked 
-      ? 'bg-gradient-to-br from-yellow-400 to-orange-500 shadow-[0_0_20px_rgba(251,191,36,0.4)]' 
+      ? 'bg-linear-to-br from-yellow-400 to-orange-500 shadow-[0_0_20px_rgba(251,191,36,0.4)]' 
       : 'bg-black/60 grayscale opacity-30'
     } transition-all"
                   title={
@@ -1862,7 +1862,7 @@ export default function Home() {
                 <div
                   className="absolute top-12 left-4 w-10 h-10 rounded-full flex items-center justify-center text-xl
     ${badges[3].unlocked 
-      ? 'bg-gradient-to-br from-yellow-400 to-orange-500 shadow-[0_0_20px_rgba(251,191,36,0.4)]' 
+      ? 'bg-linear-to-br from-yellow-400 to-orange-500 shadow-[0_0_20px_rgba(251,191,36,0.4)]' 
       : 'bg-black/60 grayscale opacity-30'
     } transition-all"
                   title={
@@ -1892,7 +1892,7 @@ export default function Home() {
                   <div className="w-32 bg-black/30 rounded-full h-2 overflow-hidden border border-purple-500/30">
                     <div
                       style={{ width: `${levelInfo.progressPercent}%` }}
-                      className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-purple-500 to-blue-600 transition-all duration-700"
+                      className="h-full rounded-full bg-linear-to-r from-cyan-400 via-purple-500 to-blue-600 transition-all duration-700"
                     />
                   </div>
 
@@ -1916,7 +1916,7 @@ export default function Home() {
 
               <div
                 className="relative p-6 mb-6 animate-slide-up rounded-2xl
-  bg-gradient-to-br from-black/40 via-purple-900/20 to-black/40
+  bg-linear-to-br from-black/40 via-purple-900/20 to-black/40
   backdrop-blur-xl
   border-2 border-purple-500/40
   shadow-[0_0_40px_rgba(168,85,247,0.15)]
@@ -1936,7 +1936,7 @@ export default function Home() {
                   <div className="w-full bg-black/30 rounded-full h-3 overflow-hidden border border-purple-500/30">
                     <div
                       style={{ width: `${progress}%` }}
-                      className="relative h-full rounded-full bg-gradient-to-r from-violet-500 via-purple-500 to-blue-600 transition-all duration-700 ease-out overflow-hidden"
+                      className="relative h-full rounded-full bg-linear-to-r from-violet-500 via-purple-500 to-blue-600 transition-all duration-700 ease-out overflow-hidden"
                     >
                       <div className="absolute inset-0 animate-shine bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent)]"></div>
                     </div>
@@ -1960,7 +1960,7 @@ export default function Home() {
 
               <div
                 className="relative p-6 mb-6 animate-slide-up rounded-2xl
-  bg-gradient-to-br from-black/40 via-purple-900/20 to-black/40
+  bg-linear-to-br from-black/40 via-purple-900/20 to-black/40
   backdrop-blur-xl
   border-2 border-purple-500/40
   shadow-[0_0_40px_rgba(59,130,246,0.15)]"
@@ -2058,7 +2058,7 @@ export default function Home() {
                                   {task.text}
                                 </span>
 
-                                <div className="flex items-center gap-2 flex-shrink-0">
+                                <div className="flex items-center gap-2 shrink-0">
                                   <button
                                     onClick={e => {
                                       e.stopPropagation();
@@ -2097,7 +2097,7 @@ export default function Home() {
               <button
                 onClick={() => setShowDifficultyMenu(true)}
                 className="fixed bottom-24 right-6 w-16 h-16 rounded-full 
-  bg-gradient-to-br from-purple-600 via-blue-600 to-cyan-500
+  bg-linear-to-br from-purple-600 via-blue-600 to-cyan-500
   shadow-[0_0_60px_rgba(139,92,246,0.6),0_0_30px_rgba(59,130,246,0.4)]
   border-2 border-white/20
   flex items-center justify-center
@@ -2110,14 +2110,14 @@ export default function Home() {
               >
                 <Plus className="w-8 h-8 text-white group-hover:rotate-90 transition-transform duration-300" />
 
-                <span className="absolute inset-0 rounded-full bg-gradient-to-br from-white/30 to-transparent opacity-50"></span>
+                <span className="absolute inset-0 rounded-full bg-linear-to-br from-white/30 to-transparent opacity-50"></span>
 
                 <span className="absolute inset-0 rounded-full border-2 border-white/40 animate-ping-slow"></span>
               </button>
               {showDifficultyMenu && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                   <div
-                    className="bg-gradient-to-br from-black/90 via-purple-900/30 to-black/90 
+                    className="bg-linear-to-br from-black/90 via-purple-900/30 to-black/90 
       backdrop-blur-xl border-2 border-purple-500/40 rounded-2xl p-6 w-full max-w-sm 
       shadow-[0_0_60px_rgba(168,85,247,0.3)]"
                   >
@@ -2202,7 +2202,7 @@ export default function Home() {
                         disabled={!newTaskText.trim() || !selectedDifficulty}
                         className={`flex-1 py-2.5 rounded-lg font-semibold transition-all ${
                           newTaskText.trim() && selectedDifficulty
-                            ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:shadow-[0_0_30px_rgba(168,85,247,0.6)]"
+                            ? "bg-linear-to-r from-purple-600 to-blue-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:shadow-[0_0_30px_rgba(168,85,247,0.6)]"
                             : "bg-black/40 text-purple-300/30 cursor-not-allowed"
                         }`}
                       >

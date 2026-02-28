@@ -37,12 +37,21 @@ const pageTransition = {
   },
 };
 
-export function AnimatedPage({ children, className }: { children: ReactNode; className?: string }) {
+export function AnimatedPage({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
     <motion.div
       initial={pageTransition.initial}
       animate={pageTransition.animate}
-      exit={{ ...pageTransition.exit, transition: pageTransition.exitTransition }}
+      exit={{
+        ...pageTransition.exit,
+        transition: pageTransition.exitTransition,
+      }}
       transition={pageTransition.transition}
       className={className}
     >
@@ -54,7 +63,7 @@ export function AnimatedPage({ children, className }: { children: ReactNode; cla
 export function AnimatedProgressBar({ progress }: { progress: number }) {
   return (
     <motion.div
-      className="h-full bg-gradient-to-r from-purple-600 to-blue-600 rounded-full"
+      className="h-full bg-linear-to-r from-purple-600 to-blue-600 rounded-full"
       initial={false}
       animate={{ width: `${progress}%` }}
       transition={{
@@ -77,11 +86,15 @@ export function AnimatedNumber({ value }: { value: number }) {
     spring.set(value);
   }, [value, spring]);
 
-  useMotionValueEvent(spring, "change", (latest) => {
+  useMotionValueEvent(spring, "change", latest => {
     setDisplay(Math.round(latest));
   });
 
-  return <motion.span className="text-accent font-semibold tabular-nums">{display}</motion.span>;
+  return (
+    <motion.span className="text-accent font-semibold tabular-nums">
+      {display}
+    </motion.span>
+  );
 }
 
 const taskCardVariants = {
@@ -91,7 +104,8 @@ const taskCardVariants = {
   },
   completed: {
     scale: 1.01,
-    boxShadow: "0 0 0 1px rgba(34, 197, 94, 0.2), 0 4px 12px -2px rgba(34, 197, 94, 0.12)",
+    boxShadow:
+      "0 0 0 1px rgba(34, 197, 94, 0.2), 0 4px 12px -2px rgba(34, 197, 94, 0.12)",
   },
 };
 
