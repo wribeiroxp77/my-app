@@ -155,3 +155,26 @@
     }
   }
 }
+
+@keyframes shootingStar {
+  0% {
+    opacity: 0;
+    transform: translateX(0) translateY(0) rotate(-25deg);
+  }
+  10% { opacity: 1; }
+  70% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translateX(300px) translateY(120px) rotate(-25deg);
+  }
+}
+
+html {
+  background-color: #0a0a0a;
+}
+
+body {
+  overscroll-behavior-y: contain;
+  background-color: #0a0a0a;
+  
+}

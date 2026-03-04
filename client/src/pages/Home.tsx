@@ -321,7 +321,7 @@ function StatsTab({
         <ChartContainer config={chartConfig} className="h-52 w-full">
           <BarChart
             data={chartData}
-            margin={{ top: 8, right: 4, left: -20, bottom: 0 }}
+            margin={{ top: 8, right: 4, left: 0, bottom: 0 }}
             barCategoryGap="28%"
           >
             <defs>
@@ -354,7 +354,7 @@ function StatsTab({
               tickLine={false}
               axisLine={false}
               tick={{ fill: "rgba(196,181,253,0.7)", fontSize: 11 }}
-              width={32}
+              width={38}
             />
             <ChartTooltip
               cursor={{ fill: "rgba(139,92,246,0.1)" }}
@@ -1406,6 +1406,37 @@ export default function Home() {
     }
   };
 
+  const playTaskSound = (completing: boolean) => {
+    try {
+      const ctx = new AudioContext();
+      if (completing) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(900, ctx.currentTime + 0.1);
+        osc.type = "sine";
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.2);
+      } else {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.setValueAtTime(400, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(250, ctx.currentTime + 0.15);
+        osc.type = "sine";
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.15);
+      }
+    } catch {}
+  };
+
   const toggleTask = (id: string) => {
     const todayISO = new Date().toISOString().split("T")[0];
     let xpDelta = 0;
@@ -1418,9 +1449,11 @@ export default function Home() {
 
       if (!t.completed) {
         xpDelta += taskXP;
+        playTaskSound(true);
         return { ...t, completed: true };
       } else {
         xpDelta -= taskXP;
+        playTaskSound(false);
         return { ...t, completed: false };
       }
     });
@@ -1531,7 +1564,23 @@ export default function Home() {
       if (!streakClaimedToday) {
         updateStreak();
       }
-      setTimeout(() => setShowConfetti(false), 3000);
+      try {
+        const ctx = new AudioContext();
+        const notes = [523, 659, 784, 1047];
+        notes.forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.value = freq;
+          osc.type = "sine";
+          gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.15);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.4);
+          osc.start(ctx.currentTime + i * 0.15);
+          osc.stop(ctx.currentTime + i * 0.15 + 0.4);
+        });
+      } catch {}
+      setTimeout(() => setShowConfetti(false), 4000);
     }
   };
 
@@ -1719,28 +1768,76 @@ export default function Home() {
   ];
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <div className="relative overflow-hidden" style={{ minHeight: "100dvh" }}>
       {/* Animated Galaxy Background */}
-      <div className="fixed inset-0 bg-linear-to-br from-[#0a0a0a] via-[#1a0b2e] to-[#16213e] animate-gradient" />
+      <div className="fixed bg-linear-to-br from-[#0a0a0a] via-[#1a0b2e] to-[#16213e] animate-gradient" style={{ inset: "-30px" }} />
       <div className="fixed inset-0 bg-linear-to-tl from-[#6b21a8]/30 via-transparent to-[#0f2557]/30" />
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,var(--tw-gradient-stops))] from-purple-900/20 via-transparent to-transparent" />
 
-      {/* Animated stars */}
-      <div className="fixed inset-0 overflow-hidden">
-        {[...Array(50)].map((_, i) => (
+      {/* Nebulosas */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[10%] left-[20%] w-64 h-64 rounded-full bg-purple-600/10 blur-[80px] animate-pulse" style={{ animationDuration: "6s" }} />
+        <div className="absolute top-[50%] right-[10%] w-48 h-48 rounded-full bg-cyan-500/10 blur-[60px] animate-pulse" style={{ animationDuration: "8s" }} />
+        <div className="absolute bottom-[20%] left-[30%] w-56 h-56 rounded-full bg-blue-600/10 blur-[70px] animate-pulse" style={{ animationDuration: "7s" }} />
+        <div className="absolute top-[30%] right-[30%] w-32 h-32 rounded-full bg-violet-400/10 blur-[50px] animate-pulse" style={{ animationDuration: "5s" }} />
+      </div>
+
+      {/* Estrelas */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        {[...Array(80)].map((_, i) => {
+          const size = Math.random();
+          const isNeon = Math.random() > 0.75;
+          const neonColor = Math.random() > 0.5 ? "rgba(167,139,250,0.9)" : "rgba(6,182,212,0.9)";
+          const starSize = size > 0.85 ? 3 : size > 0.6 ? 2 : 1;
+          return (
+            <div
+              key={i}
+              className="absolute rounded-full animate-twinkle"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                width: starSize,
+                height: starSize,
+                backgroundColor: isNeon ? neonColor : "white",
+                boxShadow: isNeon
+                  ? `0 0 ${starSize * 4}px ${starSize * 2}px ${neonColor}`
+                  : starSize === 3
+                  ? "0 0 4px 1px rgba(255,255,255,0.4)"
+                  : "none",
+                animationDelay: `${Math.random() * 4}s`,
+                animationDuration: `${2 + Math.random() * 3}s`,
+                opacity: Math.random() * 0.6 + 0.4,
+              }}
+            />
+          );
+        })}
+
+        {/* Estrelas cadentes */}
+        {[
+          { left: 20, top: 10, duration: 4, delay: 0 },
+          { left: 55, top: 25, duration: 7, delay: 5 },
+          { left: 75, top: 8, duration: 10, delay: 9 },
+        ].map((s, i) => (
           <div
-            key={i}
-            className="absolute w-1 h-1 bg-white rounded-full animate-twinkle"
+            key={`shoot-${i}`}
+            className="absolute"
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              opacity: Math.random() * 0.7 + 0.3,
+              width: "3px",
+              height: "3px",
+              left: `${s.left}%`,
+              top: `${s.top}%`,
+              borderRadius: "50%",
+              background: "white",
+              boxShadow: "0 0 6px 2px rgba(255,255,255,0.8), -20px 0 20px 2px rgba(255,255,255,0.3)",
+              animation: `shootingStar ${s.duration}s linear infinite`,
+              animationDelay: `${s.delay}s`,
+              opacity: 0,
             }}
           />
         ))}
       </div>
-      {/* Background with noise pattern */}
+
+      {/* Background noise */}
       <div
         className="fixed inset-0 opacity-5 pointer-events-none"
         style={{
@@ -1751,19 +1848,35 @@ export default function Home() {
 
       {/* Confetti */}
       {showConfetti && (
-        <div ref={confettiRef} className="fixed inset-0 pointer-events-none">
-          {[...Array(50)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-2 h-2 bg-accent rounded-full animate-bounce"
-              style={{
-                left: Math.random() * 100 + "%",
-                top: -10 + "px",
-                animation: `fall ${2 + Math.random() * 1}s linear forwards`,
-                animationDelay: Math.random() * 0.5 + "s",
-              }}
-            />
-          ))}
+        <div ref={confettiRef} className="fixed inset-0 pointer-events-none z-50">
+          {[...Array(80)].map((_, i) => {
+            const colors = ["#8b5cf6","#06b6d4","#3b82f6","#fbbf24","#34d399","#f472b6"];
+            const shapes = ["rounded-full","rounded-sm","rounded-none"];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            const shape = shapes[Math.floor(Math.random() * shapes.length)];
+            const size = 6 + Math.floor(Math.random() * 8);
+            const left = Math.random() * 100;
+            const duration = 2.5 + Math.random() * 2;
+            const delay = Math.random() * 0.8;
+            const rotate = Math.floor(Math.random() * 360);
+            return (
+              <div
+                key={i}
+                className={`absolute ${shape}`}
+                style={{
+                  left: `${left}%`,
+                  top: "-20px",
+                  width: size,
+                  height: size * (Math.random() > 0.5 ? 1 : 2),
+                  backgroundColor: color,
+                  boxShadow: `0 0 6px ${color}`,
+                  animation: `fall ${duration}s linear forwards`,
+                  animationDelay: `${delay}s`,
+                  transform: `rotate(${rotate}deg)`,
+                }}
+              />
+            );
+          })}
         </div>
       )}
 
@@ -1878,7 +1991,7 @@ export default function Home() {
                 <img
                   src="/logo.png"
                   alt="Single Player Logo"
-                  className="w-52 h-52 mx-auto -mb-8 drop-shadow-[0_0_25px_rgba(168,85,247,0.6)]"
+                  className="w-36 h-36 mx-auto -mb-4 drop-shadow-[0_0_25px_rgba(168,85,247,0.6)]"
                 />
 
                 {/* Level e barra horizontal */}
@@ -1903,7 +2016,7 @@ export default function Home() {
                 </div>
 
                 {/* Título */}
-                <h1 className="text-4xl font-bold text-white mb-2">
+                <h1 className="text-2xl font-bold text-white mb-1">
                   Single Player
                 </h1>
 
@@ -1933,10 +2046,14 @@ export default function Home() {
                       {Math.round(progress)}%
                     </span>
                   </div>
-                  <div className="w-full bg-black/30 rounded-full h-3 overflow-hidden border border-purple-500/30">
+                  <div className="w-full bg-purple-500/20 rounded-full h-3 overflow-hidden border border-purple-500/40">
                     <div
-                      style={{ width: `${progress}%` }}
-                      className="relative h-full rounded-full bg-linear-to-r from-violet-500 via-purple-500 to-blue-600 transition-all duration-700 ease-out overflow-hidden"
+                      style={{ width: `${progress === 0 ? 100 : progress}%` }}
+                      className={`relative h-full rounded-full transition-all duration-700 ease-out overflow-hidden ${
+                        progress === 0
+                          ? "bg-purple-500/20"
+                          : "bg-linear-to-r from-violet-500 via-purple-500 to-blue-600"
+                      }`}
                     >
                       <div className="absolute inset-0 animate-shine bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent)]"></div>
                     </div>
