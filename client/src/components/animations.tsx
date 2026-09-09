@@ -154,13 +154,15 @@ const buttonTransition = {
   ease: easeOut,
 };
 
+type AnimatedButtonProps = React.ComponentPropsWithoutRef<typeof motion.button>;
+
 export function AnimatedButton({
   children,
   className,
   onClick,
   type = "button",
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+}: AnimatedButtonProps) {
   return (
     <motion.button
       type={type}

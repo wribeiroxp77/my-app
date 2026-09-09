@@ -654,7 +654,7 @@ function ProfileTab({
   };
 
   const handleShareApp = async () => {
-    if (navigator.share) {
+    if (navigator.share) {""
       await navigator.share({
         title: "Single Player",
         text: `I'm leveling up my productivity with Single Player! 🚀 Join me!`,
