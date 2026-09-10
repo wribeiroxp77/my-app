@@ -1,6 +1,7 @@
 import * as React from "react";
 import * as RechartsPrimitive from "recharts";
 
+import { appStorage } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 
 // Format: { THEME_NAME: CSS_SELECTOR }
@@ -28,24 +29,10 @@ export type XPHistoryPoint = {
 };
 
 function readHistoricoTarefas(): XPHistoryPoint[] {
-  if (typeof window === "undefined") return [];
-
-  const raw = window.localStorage.getItem("historico_tarefas");
-  if (!raw) return [];
-
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-
-    return parsed
-      .map((entry: any) => ({
-        date: typeof entry?.date === "string" ? entry.date : "",
-        xp: typeof entry?.xp === "number" ? entry.xp : 0,
-      }))
-      .filter((entry: XPHistoryPoint) => !!entry.date);
-  } catch {
-    return [];
-  }
+  return appStorage.getHistory().map(entry => ({
+    date: entry.date,
+    xp: entry.xp,
+  }));
 }
 
 export function useXPHistoryLast7Days(): XPHistoryPoint[] {

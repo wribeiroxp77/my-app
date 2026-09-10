@@ -23,6 +23,15 @@ import {
   useXPHistoryLast7Days,
 } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Cell } from "recharts";
+import { appStorage } from "@/lib/storage";
+import type {
+  AppLanguage,
+  DayStats,
+  Difficulty,
+  HistoryEntry,
+  Task,
+  WeeklyTasks,
+} from "@/types";
 
 const DAYS = [
   "monday",
@@ -54,15 +63,6 @@ const DAY_NAMES = {
   },
 };
 
-type Difficulty = "easy" | "medium" | "hard";
-
-interface Task {
-  id: string;
-  text: string;
-  completed: boolean;
-  difficulty?: Difficulty;
-}
-
 const DIFFICULTY_XP: Record<Difficulty, number> = {
   easy: 5,
   medium: 10,
@@ -92,15 +92,6 @@ const getDifficultyBadgeClasses = (task: Task) => {
       return base;
   }
 };
-
-interface DayStats {
-  date: string;
-  completedCount: number;
-}
-
-interface WeeklyTasks {
-  [key: string]: Task[];
-}
 
 const ASTRONAUT_LOGO =
   "https://private-us-east-1.manuscdn.com/sessionFile/JKfrijgSHJWtYAWAoWAo99/sandbox/ZYgwdep9JZxuer1ajCjPml-img-1_1770684317000_na1fn_YXN0cm9uYXV0LWxvZ28tZmluYWw.png?x-oss-process=image/resize,w_1920,h_1920/format,webp/quality,q_80&Expires=1798761600&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvSktmcmlqZ1NISld0WUFXQW9XQW85OS9zYW5kYm94L1pZZ3dkZXA5Slp4dWVyMWFqQ2pQbWwtaW1nLTFfMTc3MDY4NDMxNzAwMF9uYTFmbl9ZWE4wY201dVlYVjBMV3h2WjI4dFptbHVZV3cudG5nP3gtb3NzLXByb2Nlc3M9aW1hZ2UvcmVzaXplLHdfMTkyMCxoXzE5MjAvZm9ybWF0LHdlYnAvcXVhbGl0eSxxXzgwIiwiQ29uZGl0aW9uIjp7IkRhdGVMZXNzVGhhbiI6eyJBV1M6RXBvY2hUaW1lIjoxNzk4NzYxNjAwfX19XX0_&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=BnfgrJnVXWvgtiXUsue4LWjpuPDxRoaL0mfL4XUAA9FRGDmYeuDPO0cziicbSde1IHK0Syduvk-B1evBBzG6a3n2zwFbrV4TySlMfAwOrKWpMx19M6FBpwhI0Eptv5rkjUOaV3jCsj6GWQHRM1TgJt-Gs6Cexs39df3HxdR2esjYxErEFwTHxzJP6leMCQ~QG1gkOP-Rb3d32abifVJfRcbJxyYAB4bDEd~F-U4PuMwMqcesQSGa8NfCaZ5f6IXD3UiEkQwjxaRan6sgAeafWErimiJCyXvvpD2cwVD82uMFS5ICx8LHV1CV6M1nZW7HsSIvD6~yqTfJpgNYe1VJZQ__";
@@ -637,7 +628,7 @@ function ProfileTab({
   const saveName = () => {
     const name = tempName.trim() || "Player";
     setPlayerName(name);
-    localStorage.setItem("playerName", name);
+    appStorage.setPlayerName(name);
     setEditingName(false);
   };
 
@@ -689,7 +680,7 @@ function ProfileTab({
   const toggleLanguage = () => {
     const next = language === "en" ? "pt" : "en";
     setLanguage(next);
-    localStorage.setItem("language", next);
+    appStorage.setLanguage(next);
   };
 
   // ── Reset handlers ────────────────────────────────────────────────────────
@@ -698,12 +689,12 @@ function ProfileTab({
     const today = new Date().toISOString().split("T")[0];
     const updated = dayStats.filter(d => d.date !== today);
     setDayStats(updated);
-    localStorage.setItem("dayStats", JSON.stringify(updated));
+    appStorage.setDayStats(updated);
     setResetModal(null);
   };
 
   const handleResetAll = () => {
-    localStorage.clear();
+    appStorage.clearAll();
     setTasks([]);
     setStreak(0);
     setWeeklyTasks({});
@@ -1261,50 +1252,44 @@ export default function Home() {
   const [newTaskText, setNewTaskText] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] =
     useState<Difficulty | null>(null);
-  const [playerName, setPlayerName] = useState<string>(
-    () => localStorage.getItem("playerName") || "Player"
-  );
+  const [playerName, setPlayerName] = useState<string>(() => appStorage.getPlayerName());
   const [editingName, setEditingName] = useState(false);
   const [tempName, setTempName] = useState("");
-  const [language, setLanguage] = useState<"en" | "pt">(
-    () => (localStorage.getItem("language") as "en" | "pt") || "en"
-  );
+  const [language, setLanguage] = useState<AppLanguage>(() => appStorage.getLanguage());
   const [resetModal, setResetModal] = useState<null | "today" | "all">(null);
 
   // Initialize
   useEffect(() => {
+    appStorage.ensureVersion();
+
     const today = new Date().toDateString();
     setTodayDate(formatDate(new Date(), language));
 
-    const savedTasks = localStorage.getItem("tasks");
-    const savedStreak = localStorage.getItem("streak");
-    const savedWeeklyTasks = localStorage.getItem("weeklyTasks");
-    const savedDayStats = localStorage.getItem("dayStats");
+    const savedTasks = appStorage.getTasks();
+    const savedStreak = appStorage.getStreak();
+    const savedWeeklyTasks = appStorage.getWeeklyTasks();
+    const savedDayStats = appStorage.getDayStats();
 
     let parsedWeekly: WeeklyTasks = {};
 
-    if (savedWeeklyTasks) {
-      parsedWeekly = JSON.parse(savedWeeklyTasks);
+    if (Object.keys(savedWeeklyTasks).length > 0) {
+      parsedWeekly = savedWeeklyTasks;
       setWeeklyTasks(parsedWeekly);
     }
 
-    if (savedTasks) setTasks(JSON.parse(savedTasks));
-    if (savedStreak) setStreak(parseInt(savedStreak));
-    if (savedDayStats) setDayStats(JSON.parse(savedDayStats));
+    if (savedTasks.length > 0) setTasks(savedTasks);
+    setStreak(savedStreak);
+    if (savedDayStats.length > 0) setDayStats(savedDayStats);
 
-    const lastStreakDate = localStorage.getItem("lastStreakDate");
+    const lastStreakDate = appStorage.getLastStreakDate();
     if (lastStreakDate === today) {
       setStreakClaimedToday(true);
     }
 
-    // carregar tarefas corretas do dia
     const dayIndex = new Date().getDay();
     const dayName = DAYS[dayIndex === 0 ? 6 : dayIndex - 1];
     const todayISO = new Date().toISOString().split("T")[0];
-    const savedCompleted = localStorage.getItem("completedToday");
-    const parsedCompleted: { date: string; ids: string[] } = savedCompleted
-      ? JSON.parse(savedCompleted)
-      : { date: "", ids: [] };
+    const parsedCompleted = appStorage.getCompletedToday();
 
     const completedIds =
       parsedCompleted.date === todayISO ? parsedCompleted.ids : [];
@@ -1320,18 +1305,15 @@ export default function Home() {
   useEffect(() => {
     const interval = setInterval(() => {
       const today = new Date().toDateString();
-      const savedDate = localStorage.getItem("currentDay");
+      const savedDate = appStorage.getCurrentDay();
 
       if (savedDate !== today) {
-        localStorage.setItem("currentDay", today);
+        appStorage.setCurrentDay(today);
 
         const dayIndex = new Date().getDay();
         const dayName = DAYS[dayIndex === 0 ? 6 : dayIndex - 1];
 
-        const savedWeekly = localStorage.getItem("weeklyTasks");
-        if (!savedWeekly) return;
-
-        const parsed = JSON.parse(savedWeekly);
+        const parsed = appStorage.getWeeklyTasks();
         const newTasks: Task[] = (parsed[dayName] || []).map((task: Task) => ({
           ...task,
           completed: false,
@@ -1374,19 +1356,7 @@ export default function Home() {
   const updateTaskHistory = (dateISO: string, xpDelta: number) => {
     if (xpDelta === 0) return;
 
-    const savedHistory = localStorage.getItem("historico_tarefas");
-    let history: { date: string; xp: number }[] = [];
-
-    if (savedHistory) {
-      try {
-        const parsed = JSON.parse(savedHistory);
-        if (Array.isArray(parsed)) {
-          history = parsed;
-        }
-      } catch {
-        // ignore parse errors and reset history
-      }
-    }
+    let history: HistoryEntry[] = appStorage.getHistory();
 
     const index = history.findIndex(entry => entry.date === dateISO);
 
@@ -1396,7 +1366,7 @@ export default function Home() {
       history.push({ date: dateISO, xp: xpDelta });
     }
 
-    localStorage.setItem("historico_tarefas", JSON.stringify(history));
+    appStorage.setHistory(history);
 
     // notificar gráficos para atualizarem em tempo real
     try {
@@ -1465,24 +1435,28 @@ export default function Home() {
     const weeklyUpdated = { ...weeklyTasks, [dayName]: updated };
     setWeeklyTasks(weeklyUpdated);
 
-    localStorage.setItem("tasks", JSON.stringify(updated));
+    appStorage.setTasks(updated);
     const todayISO2 = new Date().toISOString().split("T")[0];
     const completedIds = updated.filter(t => t.completed).map(t => t.id);
-    localStorage.setItem(
-      "completedToday",
-      JSON.stringify({ date: todayISO2, ids: completedIds })
-    );
-    localStorage.setItem("weeklyTasks", JSON.stringify(weeklyUpdated));
+    appStorage.setCompletedToday({ date: todayISO2, ids: completedIds });
+    appStorage.setWeeklyTasks(weeklyUpdated);
 
     updateProgress(updated);
 
     // 🔥 salvar histórico diário automático (contagem de tarefas concluídas)
-    const savedStats = localStorage.getItem("dayStats");
-    const parsedStats = savedStats ? JSON.parse(savedStats) : {};
+    const savedStats = appStorage.getDayStats();
+    const parsedStats = savedStats.reduce<Record<string, number>>((acc, stat) => {
+      acc[stat.date] = stat.completedCount;
+      return acc;
+    }, {});
 
     parsedStats[todayISO] = updated.filter((t: Task) => t.completed).length;
 
-    localStorage.setItem("dayStats", JSON.stringify(parsedStats));
+    const nextDayStats: DayStats[] = Object.entries(parsedStats).map(([date, completedCount]) => ({
+      date,
+      completedCount,
+    }));
+    appStorage.setDayStats(nextDayStats);
 
     // salvar XP diário em historico_tarefas
     updateTaskHistory(todayISO, xpDelta);
@@ -1515,8 +1489,8 @@ export default function Home() {
     const weeklyUpdated = { ...weeklyTasks, [dayName]: updatedTasks };
     setWeeklyTasks(weeklyUpdated);
 
-    localStorage.setItem("tasks", JSON.stringify(updatedTasks));
-    localStorage.setItem("weeklyTasks", JSON.stringify(weeklyUpdated));
+    appStorage.setTasks(updatedTasks);
+    appStorage.setWeeklyTasks(weeklyUpdated);
   };
   const startEditingWeeklyTask = (
     day: string,
@@ -1534,7 +1508,7 @@ export default function Home() {
 
     const updated = { ...weeklyTasks, [day]: updatedTasks };
     setWeeklyTasks(updated);
-    localStorage.setItem("weeklyTasks", JSON.stringify(updated));
+    appStorage.setWeeklyTasks(updated);
 
     setEditingWeeklyTaskId(null);
     setEditingWeeklyText("");
@@ -1552,7 +1526,7 @@ export default function Home() {
 
     const updated = { ...weeklyTasks, [day]: updatedTasks };
     setWeeklyTasks(updated);
-    localStorage.setItem("weeklyTasks", JSON.stringify(updated));
+    appStorage.setWeeklyTasks(updated);
   };
   const updateProgress = (currentTasks: Task[]) => {
     const completed = currentTasks.filter(t => t.completed).length;
@@ -1586,16 +1560,15 @@ export default function Home() {
 
   const updateStreak = () => {
     const today = new Date().toDateString();
-    const lastStreakDate = localStorage.getItem("lastStreakDate");
+    const lastStreakDate = appStorage.getLastStreakDate();
 
-    // Only count streak once per day
     if (lastStreakDate === today) return;
 
     const newStreak = streak + 1;
     setStreak(newStreak);
     setStreakClaimedToday(true);
-    localStorage.setItem("streak", newStreak.toString());
-    localStorage.setItem("lastStreakDate", today);
+    appStorage.setStreak(newStreak);
+    appStorage.setLastStreakDate(today);
   };
 
   const addTask = (difficulty: Difficulty) => {
@@ -1616,8 +1589,8 @@ export default function Home() {
     const weeklyUpdated = { ...weeklyTasks, [dayName]: updated };
     setWeeklyTasks(weeklyUpdated);
 
-    localStorage.setItem("tasks", JSON.stringify(updated));
-    localStorage.setItem("weeklyTasks", JSON.stringify(weeklyUpdated));
+    appStorage.setTasks(updated);
+    appStorage.setWeeklyTasks(weeklyUpdated);
   };
 
   const updateTaskText = (id: string, text: string) => {
@@ -1634,8 +1607,8 @@ export default function Home() {
     const weeklyUpdated = { ...weeklyTasks, [dayName]: updated };
     setWeeklyTasks(weeklyUpdated);
 
-    localStorage.setItem("tasks", JSON.stringify(updated));
-    localStorage.setItem("weeklyTasks", JSON.stringify(weeklyUpdated));
+    appStorage.setTasks(updated);
+    appStorage.setWeeklyTasks(weeklyUpdated);
   };
 
   const addTaskToDay = (day: string) => {
@@ -1649,7 +1622,7 @@ export default function Home() {
     const updated = [...dayTasks, newTask];
     const weeklyUpdated = { ...weeklyTasks, [day]: updated };
     setWeeklyTasks(weeklyUpdated);
-    localStorage.setItem("weeklyTasks", JSON.stringify(weeklyUpdated));
+    appStorage.setWeeklyTasks(weeklyUpdated);
   };
 
   const updateTaskInDay = (day: string, taskId: string, text: string) => {
@@ -1658,7 +1631,7 @@ export default function Home() {
       const updated = dayTasks.filter(t => t.id !== taskId);
       const weeklyUpdated = { ...weeklyTasks, [day]: updated };
       setWeeklyTasks(weeklyUpdated);
-      localStorage.setItem("weeklyTasks", JSON.stringify(weeklyUpdated));
+      appStorage.setWeeklyTasks(weeklyUpdated);
       return;
     }
 
@@ -1666,7 +1639,7 @@ export default function Home() {
     const updated = dayTasks.map(t => (t.id === taskId ? { ...t, text } : t));
     const weeklyUpdated = { ...weeklyTasks, [day]: updated };
     setWeeklyTasks(weeklyUpdated);
-    localStorage.setItem("weeklyTasks", JSON.stringify(weeklyUpdated));
+    appStorage.setWeeklyTasks(weeklyUpdated);
   };
 
   const exportData = () => {
