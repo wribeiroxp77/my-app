@@ -1648,6 +1648,8 @@ export default function Home() {
       streak,
       dayStats,
       weeklyTasks,
+      goals: appStorage.getGoals(),
+      activityHistory: appStorage.getActivityHistory(),
       exportDate: new Date().toISOString(),
     };
     const json = JSON.stringify(data, null, 2);

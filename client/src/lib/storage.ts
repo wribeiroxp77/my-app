@@ -1,14 +1,16 @@
 import type {
   AppLanguage,
+  ActivityCompletion,
   CompletedTodayRecord,
   DayStats,
   Difficulty,
+  Goal,
   HistoryEntry,
   Task,
   WeeklyTasks,
 } from "@/types";
 
-export const STORAGE_VERSION = 1;
+export const STORAGE_VERSION = 2;
 export const STORAGE_PREFIX = "single-player";
 
 export const STORAGE_KEYS = {
@@ -23,6 +25,8 @@ export const STORAGE_KEYS = {
   playerName: "playerName",
   language: "language",
   theme: "theme",
+  goals: `${STORAGE_PREFIX}:goals`,
+  activityHistory: `${STORAGE_PREFIX}:activityHistory`,
   schemaVersion: `${STORAGE_PREFIX}:schemaVersion`,
 } as const;
 
@@ -113,6 +117,124 @@ const normalizeLanguage = (value: unknown): AppLanguage => {
   return value === "pt" ? "pt" : "en";
 };
 
+const isISODateString = (value: unknown): value is string => {
+  if (typeof value !== "string" || !value.trim()) return false;
+
+  const parsed = new Date(value);
+  return (
+    !Number.isNaN(parsed.getTime()) &&
+    parsed.toISOString() === value
+  );
+};
+
+const isValidActivityLevel = (value: unknown): Goal["level"] =>
+  value === "todos" ||
+  value === "iniciante" ||
+  value === "basico" ||
+  value === "intermediario" ||
+  value === "avancado"
+    ? value
+    : "todos";
+
+const isValidGoalStatus = (value: unknown): Goal["status"] =>
+  value === "archived" ? "archived" : "active";
+
+const normalizeGoal = (value: unknown): Goal | null => {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as Record<string, unknown>;
+  const requiredStrings = ["id", "category", "name"];
+  if (
+    requiredStrings.some(
+      key =>
+        typeof candidate[key] !== "string" ||
+        !(candidate[key] as string).trim()
+    )
+  ) {
+    return null;
+  }
+  if (
+    !isISODateString(candidate.createdAt) ||
+    !isISODateString(candidate.updatedAt)
+  ) {
+    return null;
+  }
+
+  return {
+    id: candidate.id as string,
+    category: candidate.category as string,
+    name: candidate.name as string,
+    level: isValidActivityLevel(candidate.level),
+    createdAt: candidate.createdAt,
+    updatedAt: candidate.updatedAt,
+    status: isValidGoalStatus(candidate.status),
+  };
+};
+
+const normalizeGoals = (value: unknown): Goal[] => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map(normalizeGoal)
+    .filter((item): item is Goal => Boolean(item));
+};
+
+const normalizeActivityCompletion = (
+  value: unknown
+): ActivityCompletion | null => {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as Record<string, unknown>;
+  const requiredStrings = ["id", "activityId"];
+  if (
+    requiredStrings.some(
+      key =>
+        typeof candidate[key] !== "string" ||
+        !(candidate[key] as string).trim()
+    )
+  ) {
+    return null;
+  }
+  if (!isISODateString(candidate.completedAt)) return null;
+
+  const durationMinutes =
+    typeof candidate.durationMinutes === "number" &&
+    Number.isFinite(candidate.durationMinutes) &&
+    candidate.durationMinutes >= 0
+      ? candidate.durationMinutes
+      : undefined;
+  const earnedXp =
+    typeof candidate.earnedXp === "number" &&
+    Number.isFinite(candidate.earnedXp) &&
+    candidate.earnedXp >= 0
+      ? candidate.earnedXp
+      : 0;
+  const source =
+    candidate.source === "suggestion" || candidate.source === "manual"
+      ? candidate.source
+      : null;
+
+  if (!source) return null;
+
+  return {
+    id: candidate.id as string,
+    activityId: candidate.activityId as string,
+    ...(typeof candidate.goalId === "string" && candidate.goalId.trim()
+      ? { goalId: candidate.goalId }
+      : {}),
+    completedAt: candidate.completedAt,
+    ...(durationMinutes !== undefined ? { durationMinutes } : {}),
+    earnedXp,
+    source,
+  };
+};
+
+const normalizeActivityHistory = (value: unknown): ActivityCompletion[] => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map(normalizeActivityCompletion)
+    .filter((item): item is ActivityCompletion => Boolean(item));
+};
+
 const safeRead = <T>(
   key: string,
   fallback: T,
@@ -161,6 +283,12 @@ const migrateLegacyValues = () => {
     [],
     normalizeDayStats
   );
+  const existingGoals = safeRead(STORAGE_KEYS.goals, [], normalizeGoals);
+  const existingActivityHistory = safeRead(
+    STORAGE_KEYS.activityHistory,
+    [],
+    normalizeActivityHistory
+  );
 
   if (existingTasks.length > 0) {
     safeWrite(STORAGE_KEYS.tasks, existingTasks);
@@ -176,6 +304,14 @@ const migrateLegacyValues = () => {
 
   if (existingDayStats.length > 0) {
     safeWrite(STORAGE_KEYS.dayStats, existingDayStats);
+  }
+
+  if (window.localStorage.getItem(STORAGE_KEYS.goals) === null) {
+    safeWrite(STORAGE_KEYS.goals, existingGoals);
+  }
+
+  if (window.localStorage.getItem(STORAGE_KEYS.activityHistory) === null) {
+    safeWrite(STORAGE_KEYS.activityHistory, existingActivityHistory);
   }
 
   safeWrite(STORAGE_KEYS.schemaVersion, STORAGE_VERSION);
@@ -226,6 +362,26 @@ export const appStorage = {
 
   setHistory(history: HistoryEntry[]) {
     safeWrite(STORAGE_KEYS.history, history);
+  },
+
+  getGoals() {
+    return safeRead(STORAGE_KEYS.goals, [], normalizeGoals);
+  },
+
+  setGoals(goals: Goal[]) {
+    safeWrite(STORAGE_KEYS.goals, goals);
+  },
+
+  getActivityHistory() {
+    return safeRead(
+      STORAGE_KEYS.activityHistory,
+      [],
+      normalizeActivityHistory
+    );
+  },
+
+  setActivityHistory(history: ActivityCompletion[]) {
+    safeWrite(STORAGE_KEYS.activityHistory, history);
   },
 
   getCurrentDay() {
