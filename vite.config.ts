@@ -1,4 +1,3 @@
-import { jsxLocPlugin } from "@builder.io/vite-plugin-jsx-loc";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
@@ -10,7 +9,7 @@ import { defineConfig } from "vite";
 export default defineConfig({
   base: "./", // ⚡ Importante para Netlify, garante que caminhos funcionem
   root: path.resolve("./client"), // sua pasta de código fonte
-  plugins: [react(), tailwindcss(), jsxLocPlugin()],
+  plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
       "@": path.resolve("./client/src"),
