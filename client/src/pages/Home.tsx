@@ -16,6 +16,7 @@ import {
   AnimatedTaskCard,
   AnimatedButton,
 } from "@/components/animations";
+import { GoalsTab, type GoalDraft } from "@/components/GoalsTab";
 import {
   ChartContainer,
   ChartTooltip,
@@ -24,10 +25,16 @@ import {
 } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Cell } from "recharts";
 import { appStorage } from "@/lib/storage";
+import {
+  DEFAULT_TARGET_ACTIVITIES,
+  syncActivityCompletionForTask,
+} from "@/lib/goalProgress";
 import type {
   AppLanguage,
+  Activity,
   DayStats,
   Difficulty,
+  Goal,
   HistoryEntry,
   Task,
   WeeklyTasks,
@@ -474,6 +481,7 @@ function ProfileTab({
   weeklyTasks,
   setWeeklyTasks,
   setStreak,
+  setGoals,
   showSettings,
   setShowSettings,
   showWeeklyEditor,
@@ -509,6 +517,7 @@ function ProfileTab({
   weeklyTasks: WeeklyTasks;
   setWeeklyTasks: (w: WeeklyTasks) => void;
   setStreak: (s: number) => void;
+  setGoals: (goals: Goal[]) => void;
   showSettings: boolean;
   setShowSettings: (v: boolean) => void;
   showWeeklyEditor: boolean;
@@ -699,6 +708,7 @@ function ProfileTab({
     setStreak(0);
     setWeeklyTasks({});
     setDayStats([]);
+    setGoals([]);
     setResetModal(null);
   };
 
@@ -1226,12 +1236,13 @@ function ProfileTab({
 }
 
 export default function Home() {
-  const [currentTab, setCurrentTab] = useState<"home" | "stats" | "profile">(
+  const [currentTab, setCurrentTab] = useState<"home" | "goals" | "stats" | "profile">(
     "home"
   );
   const [showSettings, setShowSettings] = useState(false);
   const [showWeeklyEditor, setShowWeeklyEditor] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [streak, setStreak] = useState(0);
   const [todayDate, setTodayDate] = useState("");
   const [showConfetti, setShowConfetti] = useState(false);
@@ -1269,6 +1280,7 @@ export default function Home() {
     const savedStreak = appStorage.getStreak();
     const savedWeeklyTasks = appStorage.getWeeklyTasks();
     const savedDayStats = appStorage.getDayStats();
+    const savedGoals = appStorage.getGoals();
 
     let parsedWeekly: WeeklyTasks = {};
 
@@ -1280,6 +1292,7 @@ export default function Home() {
     if (savedTasks.length > 0) setTasks(savedTasks);
     setStreak(savedStreak);
     if (savedDayStats.length > 0) setDayStats(savedDayStats);
+    setGoals(savedGoals);
 
     const lastStreakDate = appStorage.getLastStreakDate();
     if (lastStreakDate === today) {
@@ -1428,6 +1441,16 @@ export default function Home() {
       }
     });
 
+    const toggledTask = tasks.find(task => task.id === id);
+    if (toggledTask?.activityId && toggledTask.goalId) {
+      const nextHistory = syncActivityCompletionForTask(
+        appStorage.getActivityHistory(),
+        { ...toggledTask, completed: !toggledTask.completed },
+        new Date().toISOString()
+      );
+      appStorage.setActivityHistory(nextHistory);
+    }
+
     setTasks(updated);
 
     const dayName =
@@ -1574,11 +1597,20 @@ export default function Home() {
   const addTask = (difficulty: Difficulty) => {
     if (!newTaskText.trim()) return;
 
+    addTaskToToday(newTaskText.trim(), difficulty);
+  };
+
+  const addTaskToToday = (
+    text: string,
+    difficulty: Difficulty,
+    metadata?: Pick<Task, "activityId" | "goalId">
+  ) => {
     const newTask: Task = {
       id: Date.now().toString(),
-      text: newTaskText.trim(),
+      text,
       completed: false,
       difficulty: difficulty,
+      ...metadata,
     };
 
     const updated = [...tasks, newTask];
@@ -1591,6 +1623,20 @@ export default function Home() {
 
     appStorage.setTasks(updated);
     appStorage.setWeeklyTasks(weeklyUpdated);
+  };
+
+  const addRecommendedActivityTask = (activity: Activity, goal: Goal) => {
+    const difficulty: Difficulty =
+      activity.difficulty === "facil"
+        ? "easy"
+        : activity.difficulty === "medio"
+          ? "medium"
+          : "hard";
+
+    addTaskToToday(activity.name, difficulty, {
+      activityId: activity.id,
+      goalId: goal.id,
+    });
   };
 
   const updateTaskText = (id: string, text: string) => {
@@ -1659,6 +1705,50 @@ export default function Home() {
     a.href = url;
     a.download = `single-player-backup-${new Date().toISOString().split("T")[0]}.json`;
     a.click();
+  };
+
+  const saveGoal = (draft: GoalDraft, goalId?: string) => {
+    const now = new Date().toISOString();
+    const nextGoals = goalId
+      ? goals.map(goal =>
+          goal.id === goalId
+            ? {
+                ...goal,
+                name: draft.name,
+                category: draft.category,
+                level: draft.level || "todos",
+                targetActivities: goal.targetActivities,
+                updatedAt: now,
+              }
+            : goal
+        )
+      : [
+          ...goals,
+          {
+            id:
+              globalThis.crypto?.randomUUID?.() ??
+              `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            name: draft.name,
+            category: draft.category,
+            level: draft.level || "todos",
+            targetActivities: DEFAULT_TARGET_ACTIVITIES,
+            createdAt: now,
+            updatedAt: now,
+            status: "active" as const,
+          },
+        ];
+
+    setGoals(nextGoals);
+    appStorage.setGoals(nextGoals);
+  };
+
+  const setGoalStatus = (goalId: string, status: Goal["status"]) => {
+    const now = new Date().toISOString();
+    const nextGoals = goals.map(goal =>
+      goal.id === goalId ? { ...goal, status, updatedAt: now } : goal
+    );
+    setGoals(nextGoals);
+    appStorage.setGoals(nextGoals);
   };
 
   const progress =
@@ -2319,6 +2409,20 @@ export default function Home() {
             </AnimatedPage>
           )}
 
+          {/* GOALS TAB */}
+          {currentTab === "goals" && (
+            <AnimatedPage key="goals" className="w-full max-w-md">
+              <GoalsTab
+                goals={goals}
+                activityHistory={appStorage.getActivityHistory()}
+                onCreateTask={addRecommendedActivityTask}
+                onSave={saveGoal}
+                onArchive={goalId => setGoalStatus(goalId, "archived")}
+                onRestore={goalId => setGoalStatus(goalId, "active")}
+              />
+            </AnimatedPage>
+          )}
+
           {/* PROFILE TAB */}
           {currentTab === "profile" && (
             <AnimatedPage key="profile" className="w-full max-w-md">
@@ -2331,6 +2435,7 @@ export default function Home() {
                 weeklyTasks={weeklyTasks}
                 setWeeklyTasks={setWeeklyTasks}
                 setStreak={setStreak}
+                setGoals={setGoals}
                 showSettings={showSettings}
                 setShowSettings={setShowSettings}
                 showWeeklyEditor={showWeeklyEditor}
@@ -2365,7 +2470,7 @@ export default function Home() {
 
       {/* Swipe Handler */}
       {(() => {
-        const tabs = ["home", "stats", "profile"] as const;
+        const tabs = ["home", "goals", "stats", "profile"] as const;
         return null;
       })()}
 
@@ -2384,7 +2489,7 @@ export default function Home() {
           const diffY = startY - e.changedTouches[0].clientY;
           // só muda se movimento horizontal for maior que vertical
           if (Math.abs(diffX) > Math.abs(diffY) * 1.5 && Math.abs(diffX) > 60) {
-            const tabs = ["home", "stats", "profile"] as const;
+            const tabs = ["home", "goals", "stats", "profile"] as const;
             const currentIndex = tabs.indexOf(currentTab as any);
             if (diffX > 0 && currentIndex < tabs.length - 1) {
               setCurrentTab(tabs[currentIndex + 1]);
@@ -2400,15 +2505,15 @@ export default function Home() {
           <div className="max-w-md mx-auto px-2 py-2 flex justify-around items-center relative">
             {/* Indicador deslizante */}
             {(() => {
-              const tabs = ["home", "stats", "profile"];
+              const tabs = ["home", "goals", "stats", "profile"];
               const index = tabs.indexOf(currentTab);
               return (
                 <motion.div
-                  className="absolute top-2 bottom-2 w-[30%] rounded-xl bg-purple-500/15 border border-purple-500/40"
+                  className="absolute top-2 bottom-2 w-[23%] rounded-xl bg-purple-500/15 border border-purple-500/40"
                   style={{
                     boxShadow: "0 0 20px rgba(139,92,246,0.2)",
                   }}
-                  animate={{ left: `calc(${index} * 33.333% + 1.5%)` }}
+                  animate={{ left: `calc(${index} * 25% + 1%)` }}
                   transition={{ type: "spring", stiffness: 400, damping: 35 }}
                 />
               );
@@ -2417,7 +2522,7 @@ export default function Home() {
             {/* Home */}
             <AnimatedButton
               onClick={() => setCurrentTab("home")}
-              className="relative flex flex-col items-center gap-1 px-4 py-2 rounded-xl w-1/3"
+              className="relative flex flex-col items-center gap-1 px-2 py-2 rounded-xl w-1/4"
             >
               <motion.div
                 animate={{ scale: currentTab === "home" ? 1.2 : 1 }}
@@ -2456,10 +2561,25 @@ export default function Home() {
               </span>
             </AnimatedButton>
 
+            {/* Goals */}
+            <AnimatedButton
+              onClick={() => setCurrentTab("goals")}
+              className="relative flex flex-col items-center gap-1 px-2 py-2 rounded-xl w-1/4"
+            >
+              <motion.div animate={{ scale: currentTab === "goals" ? 1.2 : 1 }} transition={{ type: "spring", stiffness: 400, damping: 20 }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <motion.circle cx="12" cy="12" r="8" stroke={currentTab === "goals" ? "#c084fc" : "#4c1d95"} strokeWidth="1.5" />
+                  <motion.circle cx="12" cy="12" r="3" stroke={currentTab === "goals" ? "#c084fc" : "#4c1d95"} strokeWidth="1.5" />
+                  <motion.path d="M12 4V2M20 12H22M12 20V22M4 12H2" stroke={currentTab === "goals" ? "#c084fc" : "#4c1d95"} strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </motion.div>
+              <span className={`text-xs font-medium tracking-wide transition-colors duration-200 ${currentTab === "goals" ? "text-purple-300" : "text-purple-900"}`}>Objetivos</span>
+            </AnimatedButton>
+
             {/* Stats */}
             <AnimatedButton
               onClick={() => setCurrentTab("stats")}
-              className="relative flex flex-col items-center gap-1 px-4 py-2 rounded-xl w-1/3"
+              className="relative flex flex-col items-center gap-1 px-2 py-2 rounded-xl w-1/4"
             >
               <motion.div
                 animate={{ scale: currentTab === "stats" ? 1.2 : 1 }}
@@ -2534,7 +2654,7 @@ export default function Home() {
                 setCurrentTab("profile");
                 setShowSettings(false);
               }}
-              className="relative flex flex-col items-center gap-1 px-4 py-2 rounded-xl w-1/3"
+              className="relative flex flex-col items-center gap-1 px-2 py-2 rounded-xl w-1/4"
             >
               <motion.div
                 animate={{ scale: currentTab === "profile" ? 1.2 : 1 }}
