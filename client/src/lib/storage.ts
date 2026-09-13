@@ -9,6 +9,7 @@ import type {
   Task,
   WeeklyTasks,
 } from "@/types";
+import { DEFAULT_TARGET_ACTIVITIES } from "@/lib/goalProgress";
 
 export const STORAGE_VERSION = 2;
 export const STORAGE_PREFIX = "single-player";
@@ -47,6 +48,12 @@ const normalizeTask = (value: unknown): Task | null => {
     text,
     completed: Boolean(candidate.completed),
     difficulty,
+    ...(typeof candidate.activityId === "string" && candidate.activityId.trim()
+      ? { activityId: candidate.activityId }
+      : {}),
+    ...(typeof candidate.goalId === "string" && candidate.goalId.trim()
+      ? { goalId: candidate.goalId }
+      : {}),
   };
 };
 
@@ -165,6 +172,12 @@ const normalizeGoal = (value: unknown): Goal | null => {
     category: candidate.category as string,
     name: candidate.name as string,
     level: isValidActivityLevel(candidate.level),
+    targetActivities:
+      typeof candidate.targetActivities === "number" &&
+      Number.isInteger(candidate.targetActivities) &&
+      candidate.targetActivities > 0
+        ? candidate.targetActivities
+        : DEFAULT_TARGET_ACTIVITIES,
     createdAt: candidate.createdAt,
     updatedAt: candidate.updatedAt,
     status: isValidGoalStatus(candidate.status),
@@ -217,6 +230,9 @@ const normalizeActivityCompletion = (
 
   return {
     id: candidate.id as string,
+    ...(typeof candidate.taskId === "string" && candidate.taskId.trim()
+      ? { taskId: candidate.taskId }
+      : {}),
     activityId: candidate.activityId as string,
     ...(typeof candidate.goalId === "string" && candidate.goalId.trim()
       ? { goalId: candidate.goalId }

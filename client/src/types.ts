@@ -39,6 +39,7 @@ export interface Goal {
   category: string;
   name: string;
   level: ActivityLevel;
+  targetActivities: number;
   createdAt: string;
   updatedAt: string;
   status: GoalStatus;
@@ -46,6 +47,7 @@ export interface Goal {
 
 export interface ActivityCompletion {
   id: string;
+  taskId?: string;
   activityId: string;
   goalId?: string;
   completedAt: string;
@@ -59,6 +61,8 @@ export interface Task {
   text: string;
   completed: boolean;
   difficulty?: Difficulty;
+  activityId?: string;
+  goalId?: string;
 }
 
 export interface DayStats {

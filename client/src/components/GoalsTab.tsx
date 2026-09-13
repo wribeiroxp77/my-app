@@ -1,5 +1,8 @@
 import { activities } from "@/data/activityCatalog";
-import type { ActivityLevel, Goal } from "@/types";
+import { ActivityRecommendationCard } from "@/components/ActivityRecommendationCard";
+import { recommendActivity } from "@/lib/recommendActivity";
+import { getGoalProgress } from "@/lib/goalProgress";
+import type { Activity, ActivityCompletion, ActivityLevel, Goal } from "@/types";
 import {
   TimeAvailabilitySelector,
   type AvailableTimeMinutes,
@@ -26,6 +29,8 @@ const levelLabels: Record<ActivityLevel, string> = {
 
 type GoalsTabProps = {
   goals: Goal[];
+  activityHistory: ActivityCompletion[];
+  onCreateTask: (activity: Activity, goal: Goal) => void;
   onSave: (draft: GoalDraft, goalId?: string) => void;
   onArchive: (goalId: string) => void;
   onRestore: (goalId: string) => void;
@@ -33,6 +38,7 @@ type GoalsTabProps = {
 
 function GoalCard({
   goal,
+  activityHistory,
   archived,
   onEdit,
   onArchive,
@@ -40,12 +46,15 @@ function GoalCard({
   onAdvance,
 }: {
   goal: Goal;
+  activityHistory: ActivityCompletion[];
   archived?: boolean;
   onEdit?: () => void;
   onArchive?: () => void;
   onRestore?: () => void;
   onAdvance?: () => void;
 }) {
+  const goalProgress = getGoalProgress(goal, activityHistory);
+
   return (
     <motion.article
       layout
@@ -73,6 +82,10 @@ function GoalCard({
                 {levelLabels[goal.level]}
               </span>
             )}
+            <span className="rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-1 text-emerald-200">
+              {goalProgress.completedActivities}/{goalProgress.targetActivities}{" "}
+              atividades · {Math.round(goalProgress.percentage)}%
+            </span>
           </div>
         </div>
       </div>
@@ -112,7 +125,14 @@ function GoalCard({
   );
 }
 
-export function GoalsTab({ goals, onSave, onArchive, onRestore }: GoalsTabProps) {
+export function GoalsTab({
+  goals,
+  activityHistory,
+  onCreateTask,
+  onSave,
+  onArchive,
+  onRestore,
+}: GoalsTabProps) {
   const [draft, setDraft] = useState<GoalDraft>(emptyDraft);
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -120,6 +140,10 @@ export function GoalsTab({ goals, onSave, onArchive, onRestore }: GoalsTabProps)
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
   const [availableTimeMinutes, setAvailableTimeMinutes] =
     useState<AvailableTimeMinutes | null>(null);
+  const [recommendedActivity, setRecommendedActivity] =
+    useState<Activity | null>(null);
+  const [recommendationConfirmed, setRecommendationConfirmed] = useState(false);
+  const [anotherSuggestionMessage, setAnotherSuggestionMessage] = useState("");
 
   const categories = useMemo(
     () => Array.from(new Set(activities.map(activity => activity.category))).sort(),
@@ -132,6 +156,26 @@ export function GoalsTab({ goals, onSave, onArchive, onRestore }: GoalsTabProps)
   const startAdvanceFlow = (goalId: string) => {
     setSelectedGoalId(goalId);
     setAvailableTimeMinutes(null);
+    setRecommendedActivity(null);
+    setRecommendationConfirmed(false);
+    setAnotherSuggestionMessage("");
+  };
+
+  const selectAvailableTime = (minutes: AvailableTimeMinutes) => {
+    if (!selectedGoal) return;
+
+    setAvailableTimeMinutes(minutes);
+    setRecommendationConfirmed(false);
+    setAnotherSuggestionMessage("");
+    setRecommendedActivity(
+      recommendActivity({
+        goal: selectedGoal,
+        availableTimeMinutes: minutes,
+        activities,
+        activityHistory,
+        now: new Date(),
+      })
+    );
   };
 
   const closeForm = () => {
@@ -266,7 +310,7 @@ export function GoalsTab({ goals, onSave, onArchive, onRestore }: GoalsTabProps)
           </div>
           <div className="space-y-3">
             <AnimatePresence initial={false}>
-              {activeGoals.map(goal => <GoalCard key={goal.id} goal={goal} onAdvance={() => startAdvanceFlow(goal.id)} onEdit={() => openEditGoal(goal)} onArchive={() => onArchive(goal.id)} />)}
+              {activeGoals.map(goal => <GoalCard key={goal.id} goal={goal} activityHistory={activityHistory} onAdvance={() => startAdvanceFlow(goal.id)} onEdit={() => openEditGoal(goal)} onArchive={() => onArchive(goal.id)} />)}
             </AnimatePresence>
           </div>
         </section>
@@ -285,18 +329,51 @@ export function GoalsTab({ goals, onSave, onArchive, onRestore }: GoalsTabProps)
                 <p className="text-xs font-semibold uppercase tracking-wider text-cyan-200/75">Preparar avanço</p>
                 <h2 className="mt-1 font-semibold text-white">{selectedGoal.name}</h2>
               </div>
-              <button type="button" onClick={() => setSelectedGoalId(null)} className="rounded-lg p-1 text-white/45 hover:bg-white/10 hover:text-white" aria-label="Fechar seleção de tempo">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedGoalId(null);
+                  setRecommendedActivity(null);
+                  setAnotherSuggestionMessage("");
+                }}
+                className="rounded-lg p-1 text-white/45 hover:bg-white/10 hover:text-white"
+                aria-label="Fechar seleção de tempo"
+              >
                 <X size={18} />
               </button>
             </div>
             <TimeAvailabilitySelector
               value={availableTimeMinutes}
-              onChange={setAvailableTimeMinutes}
+              onChange={selectAvailableTime}
             />
             {availableTimeMinutes !== null && (
-              <p className="mt-4 rounded-xl border border-purple-400/20 bg-purple-500/10 px-3 py-2 text-sm text-purple-100/75">
-                Tempo de sessão definido. A sugestão de atividade será a próxima etapa.
-              </p>
+              recommendedActivity ? (
+                <>
+                  <ActivityRecommendationCard
+                    activity={recommendedActivity}
+                    availableTimeMinutes={availableTimeMinutes}
+                    confirmed={recommendationConfirmed}
+                    onConfirm={() => {
+                      onCreateTask(recommendedActivity, selectedGoal);
+                      setRecommendationConfirmed(true);
+                    }}
+                    onAnotherSuggestion={() =>
+                      setAnotherSuggestionMessage(
+                        "Não há outra sugestão disponível para este objetivo e tempo agora."
+                      )
+                    }
+                  />
+                  {anotherSuggestionMessage && (
+                    <p className="mt-3 rounded-xl border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-sm text-amber-100/80">
+                      {anotherSuggestionMessage}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <p className="mt-4 rounded-xl border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-sm text-amber-100/80">
+                  Não encontramos uma atividade adequada para este objetivo e tempo.
+                </p>
+              )
             )}
           </motion.section>
         )}
@@ -310,7 +387,7 @@ export function GoalsTab({ goals, onSave, onArchive, onRestore }: GoalsTabProps)
           </div>
           <div className="space-y-3">
             <AnimatePresence initial={false}>
-              {archivedGoals.map(goal => <GoalCard key={goal.id} goal={goal} archived onRestore={() => onRestore(goal.id)} />)}
+              {archivedGoals.map(goal => <GoalCard key={goal.id} goal={goal} activityHistory={activityHistory} archived onRestore={() => onRestore(goal.id)} />)}
             </AnimatePresence>
           </div>
         </section>

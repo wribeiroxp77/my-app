@@ -25,8 +25,13 @@ import {
 } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Cell } from "recharts";
 import { appStorage } from "@/lib/storage";
+import {
+  DEFAULT_TARGET_ACTIVITIES,
+  syncActivityCompletionForTask,
+} from "@/lib/goalProgress";
 import type {
   AppLanguage,
+  Activity,
   DayStats,
   Difficulty,
   Goal,
@@ -1436,6 +1441,16 @@ export default function Home() {
       }
     });
 
+    const toggledTask = tasks.find(task => task.id === id);
+    if (toggledTask?.activityId && toggledTask.goalId) {
+      const nextHistory = syncActivityCompletionForTask(
+        appStorage.getActivityHistory(),
+        { ...toggledTask, completed: !toggledTask.completed },
+        new Date().toISOString()
+      );
+      appStorage.setActivityHistory(nextHistory);
+    }
+
     setTasks(updated);
 
     const dayName =
@@ -1582,11 +1597,20 @@ export default function Home() {
   const addTask = (difficulty: Difficulty) => {
     if (!newTaskText.trim()) return;
 
+    addTaskToToday(newTaskText.trim(), difficulty);
+  };
+
+  const addTaskToToday = (
+    text: string,
+    difficulty: Difficulty,
+    metadata?: Pick<Task, "activityId" | "goalId">
+  ) => {
     const newTask: Task = {
       id: Date.now().toString(),
-      text: newTaskText.trim(),
+      text,
       completed: false,
       difficulty: difficulty,
+      ...metadata,
     };
 
     const updated = [...tasks, newTask];
@@ -1599,6 +1623,20 @@ export default function Home() {
 
     appStorage.setTasks(updated);
     appStorage.setWeeklyTasks(weeklyUpdated);
+  };
+
+  const addRecommendedActivityTask = (activity: Activity, goal: Goal) => {
+    const difficulty: Difficulty =
+      activity.difficulty === "facil"
+        ? "easy"
+        : activity.difficulty === "medio"
+          ? "medium"
+          : "hard";
+
+    addTaskToToday(activity.name, difficulty, {
+      activityId: activity.id,
+      goalId: goal.id,
+    });
   };
 
   const updateTaskText = (id: string, text: string) => {
@@ -1679,6 +1717,7 @@ export default function Home() {
                 name: draft.name,
                 category: draft.category,
                 level: draft.level || "todos",
+                targetActivities: goal.targetActivities,
                 updatedAt: now,
               }
             : goal
@@ -1692,6 +1731,7 @@ export default function Home() {
             name: draft.name,
             category: draft.category,
             level: draft.level || "todos",
+            targetActivities: DEFAULT_TARGET_ACTIVITIES,
             createdAt: now,
             updatedAt: now,
             status: "active" as const,
@@ -2374,6 +2414,8 @@ export default function Home() {
             <AnimatedPage key="goals" className="w-full max-w-md">
               <GoalsTab
                 goals={goals}
+                activityHistory={appStorage.getActivityHistory()}
+                onCreateTask={addRecommendedActivityTask}
                 onSave={saveGoal}
                 onArchive={goalId => setGoalStatus(goalId, "archived")}
                 onRestore={goalId => setGoalStatus(goalId, "active")}
